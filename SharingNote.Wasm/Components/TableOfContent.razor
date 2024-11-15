@@ -1,0 +1,164 @@
+﻿@using SharingNote.Wasm.Services
+@using Markdig
+@using Markdig.Syntax
+@using System.Text
+@using System.Text.RegularExpressions
+
+@inject NavigationManager navigationManager
+@inject MarkdownService mardownService
+
+
+<MudPaper Class="@Class" Elevation="@Elevation" Style="@($"{Style}" + (IsFixed ? "position: fixed" : ""))">
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center">
+        <MudText Align="Align.Center" Style="font-weight: bold;">@Title</MudText>
+    </MudStack>
+
+    @if (_treeViewData != null && _treeViewData.Any())
+    {
+        <MudTreeView T="string" Dense="true" Hover="true" Ripple="false"
+                     Height="@Height" Color="@Color" Width="@Width"
+                     AutoExpand="true">
+            @foreach (var item in _treeViewData)
+            {
+                @RenderTreeViewItem(item)
+            }
+        </MudTreeView>
+    }
+</MudPaper>
+
+@code {
+    List<TreeItemData<string>> _treeViewData = new();
+
+    [Parameter]
+    public string Width { get; set; } = "200px";
+
+    [Parameter]
+    public string Height { get; set; } = "300px";
+
+    [Parameter]
+    public bool IsFixed { get; set; } = true;
+
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Style { get; set; } = string.Empty;
+
+    [Parameter]
+    public int Elevation { get; set; } = 3;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool ExpandAll { get; set; } = true;
+
+    [Parameter]
+
+    public string ExpandButtonIcon { get; set; } = Icons.Material.Filled.ArrowRight;
+
+
+    [Parameter, EditorRequired]
+    public string MarkdownContent { get; set; } = string.Empty;
+
+    [Parameter]
+    public Typo TextTypo { get; set; } = Typo.body1;
+
+    [Parameter]
+    public Color ExpandButtonIconColor { get; set; } = Color.Primary;
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public int MaxLevel { get; set; } = 3;
+
+    List<Heading> _headings = [];
+
+    protected override void OnInitialized()
+    {
+        _headings = mardownService.GetHeadingsFromMarkdown(MarkdownContent);
+
+        if (_headings != null && _headings.Any())
+        {
+            foreach (var heading in _headings)
+            {
+                var treeItemData = CreateTreeItemData(heading, 1);
+
+                if (treeItemData != null)
+                {
+                    _treeViewData.Add(treeItemData);
+                }
+            }
+        }
+    }
+
+    private TreeItemData<string>? CreateTreeItemData(Heading heading, int level)
+    {
+
+        if (level > MaxLevel)
+        {
+            return null;
+        }
+
+        var data = new TreeItemData<string>()
+            {
+                Text = heading.Name,
+                Value = heading.Anchor,
+                Children = new List<TreeItemData<string>>()
+            };
+
+        foreach (var child in heading.Children)
+        {
+            var childTreeItemData = CreateTreeItemData(child, level + 1);
+
+            if (childTreeItemData != null)
+            {
+                data.Children.Add(childTreeItemData);
+            }
+
+        }
+
+        return data;
+    }
+
+    private RenderFragment RenderTreeViewItem(TreeItemData<string> data) => builder =>
+    {
+        builder.OpenComponent<MudTreeViewItem<string>>(0);
+        builder.AddAttribute(1, "Text", data.Text);
+        builder.AddAttribute(2, "Value", data.Value);
+        builder.AddAttribute(3, "ExpandButtonIcon", ExpandButtonIcon);
+        builder.AddAttribute(4, "ExpandButtonIconColor", ExpandButtonIconColor);
+        builder.AddAttribute(5, "Expanded", ExpandAll);
+        builder.AddAttribute(6, "TextTypo", TextTypo);
+        builder.AddAttribute(7, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, (args) => OnTreeItemClick(data)));
+
+        if (data.Children != null && data.Children.Any())
+        {
+            builder.AddAttribute(8, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                foreach (var childData in data.Children)
+                {
+                    var treeViewItem = RenderTreeViewItem(childData);
+                    childBuilder.AddContent(5, treeViewItem);
+                }
+            }));
+        }
+
+        builder.CloseComponent();
+    };
+
+    private void OnTreeItemClick(TreeItemData<string> data)
+    {
+        var path = navigationManager.ToBaseRelativePath(navigationManager.Uri);
+        var index = path.IndexOf("#");
+
+        if (index > 0)
+        {
+            path = path.Substring(0, index);
+        }
+
+        navigationManager.NavigateTo($"{path}#{data.Value}");
+    }
+
+}

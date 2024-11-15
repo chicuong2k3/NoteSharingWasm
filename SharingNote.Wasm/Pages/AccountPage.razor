@@ -1,0 +1,178 @@
+﻿@page "/account"
+@using SharedKernel.Authentication.Extensions
+
+@inject ISnackbar snackbar
+@inject NavigationManager navigationManager
+@inject IUserService userSerivce
+@inject IAuthService authService
+
+<AuthorizeView Context="UserContext">
+    <Authorized>
+        <MudPaper Class="px-4 py-8 rounded-lg" Outlined="true">
+            <MudText Align="Align.Center" Typo="Typo.h3">TÀI KHOẢN</MudText>
+
+            <MudGrid>
+                <MudItem md="6">
+                    <MudStack>
+
+                        <MudGrid>
+                            <MudItem md="4">
+                                <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center">
+                                    <MudText Typo="Typo.subtitle2">Ảnh đại diện</MudText>
+
+                                    <MudFileUpload T="IBrowserFile" Accept=".png, .jpg"
+                                                   Disabled="@(!_editMode)"
+                                                   MaximumFileCount="1"
+                                                   FilesChanged="UploadAvatar">
+                                        <ActivatorContent>
+                                            <MudAvatar Size="Size.Large">
+                                                <MudImage Src="@Model?.Avatar" />
+                                            </MudAvatar>
+                                        </ActivatorContent>
+                                    </MudFileUpload>
+                                </MudStack>
+                            </MudItem>
+
+                            <MudItem md="8">
+                                @if (Model != null)
+                                {
+                                    <MudText Typo="Typo.subtitle2">Thông tin cá nhân</MudText>
+                                    <MudStack>
+
+                                        <MudTextField Disabled="@(!_editMode)" Immediate="true"
+                                                      For="@(() => Model.DisplayName)" @bind-Value="@Model.DisplayName"
+                                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+
+                                    </MudStack>
+                                }
+                            </MudItem>
+
+
+                        </MudGrid>
+
+                        @if (!_editMode)
+                        {
+                            <MudButton Class="rounded-pill" Color="Color.Warning" DropShadow="false"
+                                       Ripple="false"
+                                       OnClick="@(() => _editMode = true)"
+                                       Variant="Variant.Filled" Size="Size.Small">Sửa thông tin</MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Class="rounded-pill" Color="Color.Info" DropShadow="false"
+                                       Ripple="false"
+                                       OnClick="OnUpdateInfo"
+                                       Variant="Variant.Filled" Size="Size.Small">Cập nhật thông tin</MudButton>
+                        }
+                    </MudStack>
+
+                    <MudStack Class="mt-4">
+                        <MudButton Class="rounded-pill" Color="Color.Info" DropShadow="false"
+                                   Ripple="false" OnClick="@(() => navigationManager.NavigateTo($"/post/search?userId={UserContext.User.GetUserId()}"))"
+                                   Variant="Variant.Filled" Size="Size.Small">Xem các bài viết của bạn</MudButton>
+
+                        <MudButton Class="rounded-pill" Color="Color.Default" DropShadow="false"
+                                   Ripple="false" OnClick="LogoutAsync"
+                                   Variant="Variant.Filled" Size="Size.Small">Đăng xuất</MudButton>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </Authorized>
+</AuthorizeView>
+
+
+@code {
+
+    UserInfo? Model;
+    bool _editMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await userSerivce.GetUserInfoAsync();
+
+        if (user != null)
+        {
+            Model = new UserInfo
+                {
+                    DisplayName = user.DisplayName,
+                    Avatar = user.Avatar
+                };
+        }
+        else
+        {
+            navigationManager.NavigateTo("/login", true);
+        }
+    }
+
+    private async Task OnUpdateInfo()
+    {
+        if (Model != null)
+        {
+            var result = await userSerivce.UpdateUserAsync(
+                Model.DisplayName,
+                Model.Avatar
+            );
+
+            if (result.IsSuccessStatusCode)
+            {
+                snackbar.Add("Thông tin được cập nhật thành công.", Severity.Success);
+                _editMode = false;
+            }
+            else
+            {
+                snackbar.Add("Có lỗi xảy ra khi cập nhật thông tin.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task UploadAvatar(IBrowserFile file)
+    {
+        try
+        {
+            var base64Image = await ConvertToBase64Async(file);
+            if (Model != null)
+            {
+                Model.Avatar = base64Image;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            snackbar.Add("Có lỗi xảy ra.", Severity.Error);
+        }
+    }
+
+
+    private async Task<string> ConvertToBase64Async(IBrowserFile file)
+    {
+        using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+        var bytes = memoryStream.ToArray();
+        return $"data:{file.ContentType};base64,{Convert.ToBase64String(bytes)}";
+    }
+
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            await authService.LogoutAsync();
+            navigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception ex)
+        {
+            snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    class UserInfo
+    {
+        [Label("Tên hiển thị")]
+        [Required(ErrorMessage = "Không được để trống.")]
+        public string DisplayName { get; set; } = string.Empty;
+
+        public string Avatar { get; set; } = string.Empty;
+    }
+}

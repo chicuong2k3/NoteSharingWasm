@@ -1,0 +1,60 @@
+﻿@page "/tag/create"
+
+@inject ISnackbar snackbar
+@inject NavigationManager navigationManager
+@inject ITagService tagService
+
+<AuthorizeView Context="UserContext">
+    <Authorized>
+        <EditForm Model="@Model" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <MudStack>
+                <MudInputLabel Style="font-weight: 600">Tên tag</MudInputLabel>
+                <MudTextField Margin="Margin.Dense"
+                              Variant="Variant.Outlined" @bind-Value="@Model.Name"
+                              For="@(() => Model.Name)"></MudTextField>
+            </MudStack>
+
+            @if (!_isSubmitting)
+            {
+                <MudButton ButtonType="ButtonType.Submit"
+                           Variant="Variant.Filled" Color="Color.Success" FullWidth="true"
+                           Class="mt-3 rounded-pill" Ripple="false" DropShadow="false">
+                    Lưu tag
+                </MudButton>
+            }
+            else
+            {
+                <MudProgressCircular Color="Color.Success" Size="Size.Small" Class="mt-3" />
+            }
+        </EditForm>
+    </Authorized>
+    <NotAuthorized>
+        <AccessDenied />
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+@code {
+    CreateTagRequest Model = new();
+    bool _isSubmitting = false;
+
+    private async Task HandleValidSubmit(EditContext editContext)
+    {
+
+        _isSubmitting = true;
+
+        var result = await tagService.CreateTagAsync(Model);
+
+        if (result.IsSuccessStatusCode)
+        {
+            snackbar.Add("Tạo tag thành công.", Severity.Success);
+            navigationManager.NavigateTo("/tag");
+        }
+
+        _isSubmitting = false;
+    }
+
+
+}

@@ -1,0 +1,183 @@
+﻿@page "/post/edit/{id:guid}"
+@using System.Security.Claims
+
+
+@inject ISnackbar snackbar
+@inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+@inject IPostService postService
+@inject ITagService tagService
+@inject AuthorizationService authorizationService
+
+@if (Model != null && _canManagePost)
+{
+    <EditForm Model="@Model" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+
+        <MudStack>
+            <MudInputLabel Style="font-weight: 600">Tiêu đề</MudInputLabel>
+            <MudTextField Margin="Margin.Dense"
+                          Variant="Variant.Outlined" @bind-Value="@Model.Title"
+                          For="@(() => Model.Title)"></MudTextField>
+        </MudStack>
+
+        <MudStack Class="mt-4">
+            <MudInputLabel Style="font-weight: 600">Chọn các tags</MudInputLabel>
+            <MudSelect T="Guid" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter"
+                       CheckedIcon="@Icons.Material.Filled.Star"
+                       UncheckedIcon="@Icons.Material.Filled.StarBorder"
+                       Variant="Variant.Outlined" Margin="Margin.Dense"
+                       MultiSelectionTextFunc="@(new Func<List<string>, string>(GetMultiSelectionText))"
+                       MultiSelection="true" SelectedValuesChanged="OnSelectedTagsChanged">
+                @foreach (var tag in _tags)
+                {
+                    <MudSelectItem T="Guid" Value="@tag.Id" Ripple="false">
+                        @tag.Name
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+
+
+        <MudStack Class="mt-4">
+            <MudInputLabel Style="font-weight: 600">Nội dung</MudInputLabel>
+
+            <MarkdownEditor @bind-Value="@Model.Content"
+                            AllowResize="false" AutoSaveEnabled="true"
+                            LineWrapping="true" LineNumbers="true" ToolbarTips="true"
+                            MinHeight="500px" MaxHeight="500px"
+                            UploadImage="true"
+                            HideIcons="@(["fullscreen"])" />
+
+            <ValidationMessage class="mud-input-helper-text mud-input-error" style="font-size: 0.75rem;" For="() => Model.Content" />
+        </MudStack>
+
+
+
+
+        @if (!_isSubmitting)
+        {
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success" FullWidth="true"
+                       Class="mt-3 rounded-pill" DropShadow="false" Disabled="@(Model.TagIds.Count == 0)">
+                Lưu bài viết
+            </MudButton>
+        }
+        else
+        {
+            <MudProgressCircular Color="Color.Success" Size="Size.Small" Class="mt-3" />
+        }
+    </EditForm>
+}
+else
+{
+    <AccessDenied />
+}
+
+
+@code {
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    UpdatePostRequest? Model;
+
+    List<TagResponse> _tags = [];
+
+    Guid _authorId;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    ClaimsPrincipal? _user;
+
+    private bool _canManagePost;
+    bool _isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = (await AuthenticationStateTask).User;
+
+        var result = await postService.GetPostAsync(Id);
+
+        if (result != null)
+        {
+            Model = new UpdatePostRequest()
+                {
+                    Title = result.Title,
+                    Content = result.Content,
+                    TagIds = result.Tags.Select(x => x.Id).ToList()
+                };
+
+            _authorId = result.UserId;
+        }
+
+        _tags = (await tagService.GetTagsAsync()).OrderBy(tag => tag.Name).ToList();
+
+
+        _canManagePost = _user != null &&
+            await authorizationService.IsAuthorizedToManagePost(_user, Id);
+    }
+
+    private string GetMultiSelectionText(List<string> selectedValues)
+    {
+        var selectedTags = _tags.Where(x => selectedValues.Contains(x.Id.ToString()));
+
+        var count = selectedValues.Count;
+
+        if (count == 0) return "Chưa có tag nào được chọn";
+
+        return $"Có {count} tag được chọn: {string.Join(", ", selectedTags.Select(x => x.Name))}";
+    }
+
+    private void OnSelectedTagsChanged(IEnumerable<Guid> tagIds)
+    {
+        if (Model != null)
+        {
+            Model.TagIds = tagIds.ToList();
+        }
+    }
+
+    private async Task HandleValidSubmit(EditContext editContext)
+    {
+        if (Model == null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        var result = await postService.UpdatePostAsync(Id, new UpdatePostRequest()
+            {
+                Title = Model.Title,
+                Content = Model.Content,
+                TagIds = Model.TagIds
+            });
+
+        if (result.IsSuccessStatusCode)
+        {
+            snackbar.Add("Sửa bài viết thành công.", Severity.Success);
+            navigationManager.NavigateTo($"/post/{Id}");
+        }
+
+
+        _isSubmitting = false;
+    }
+
+    private void UpdateTagIds(Guid tagId, bool isChecked)
+    {
+        if (Model != null)
+        {
+            if (isChecked)
+            {
+                Model.TagIds.Add(tagId);
+            }
+            else
+            {
+                Model.TagIds.Remove(tagId);
+            }
+        }
+    }
+
+
+
+}

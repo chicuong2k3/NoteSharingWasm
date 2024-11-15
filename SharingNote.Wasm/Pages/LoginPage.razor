@@ -1,0 +1,151 @@
+﻿@page "/login"
+
+@inject ISnackbar snackbar
+@inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+@inject IConfiguration configuration
+@inject IDialogService dialogService
+@inject IAuthService authService
+
+<PageTitle>Đăng nhập</PageTitle>
+
+<MudGrid Justify="Justify.Center" Class="mt-5">
+    <MudItem xs="10" md="7">
+        <MudPaper Elevation="0" Class="pa-8" Style="width: 100%;" Outlined="true">
+            <MudForm Spacing="3" @ref="_form" Model="@_model" @bind-IsValid="_isFormValid">
+                <MudText Typo="Typo.h1" Align="Align.Center">ĐĂNG NHẬP</MudText>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Elevation="0">
+                        @ErrorMessage
+                    </MudAlert>
+                }
+
+                <MudTextField InputType="InputType.Email" Disabled="_isSubmitting"
+                              @bind-Value="_model.Email" For="@(() => _model.Email)"
+                              Immediate="true" ShrinkLabel="true"
+                              Margin="Margin.Dense" Variant="Variant.Outlined" />
+
+                <MudTextField InputType="InputType.Password" Disabled="_isSubmitting"
+                              @bind-Value="_model.Password" For="@(() => _model.Password)"
+                              Immediate="true" ShrinkLabel="true"
+                              Margin="Margin.Dense" Variant="Variant.Outlined" />
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudSwitch @bind-Value="_model.RememberMe" For="@(() => _model.RememberMe)"
+                               Color="Color.Primary" Size="Size.Small" Disabled="_isSubmitting" />
+                    <MudLink Typo="Typo.body2" OnClick="OpenForgotPasswordDialog" Class="text-decoration-none">Quên mật khẩu?</MudLink>
+                </MudStack>
+
+
+
+                @if (_isSubmitting)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               DropShadow="false" Class="rounded-pill"
+                               OnClick="@(Login)">Đăng nhập</MudButton>
+                }
+            </MudForm>
+
+            <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-3">
+                Chưa có tài khoản?
+                <MudLink OnClick="@(() => navigationManager.NavigateTo("/register"))"
+                         Class="text-decoration-none" Typo="Typo.body2">
+                    Đăng ký ngay
+                </MudLink>
+            </MudText>
+
+
+            <MudButton FullWidth="true" DropShadow="false"
+                       Variant="Variant.Filled" Class="rounded-pill mt-5"
+                       Color="Color.Success" StartIcon="@Icons.Custom.Brands.Gmail"
+                       OnClick="LoginWithGoogle">
+                Đăng nhập với Google
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+
+    MudForm? _form;
+
+    LoginModel _model = new();
+    bool _isFormValid = false;
+    bool _isSubmitting = false;
+    string ErrorMessage = string.Empty;
+
+    private async Task Login()
+    {
+        await _form!.Validate();
+
+
+        if (_isFormValid)
+        {
+            _isSubmitting = true;
+
+            var response = await authService.LoginAsync(_model.Email, _model.Password);
+
+            if (response.IsSuccessStatusCode)
+            {
+                snackbar.Add("Đăng nhập thành công", Severity.Success);
+                navigationManager.NavigateTo("/", true);
+            }
+            else
+            {
+                ErrorMessage = "Tên dăng nhập hoặc mật khẩu không đúng";
+            }
+
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task OpenForgotPasswordDialog()
+    {
+        var dialogOptions = new DialogOptions()
+            {
+                FullWidth = true
+            };
+
+        var dialog = await dialogService.ShowAsync<ForgotPasswordDialog>("Quên mật khẩu", dialogOptions);
+
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            //await OnPostDeleted.InvokeAsync(Post.Id);
+        }
+    }
+
+    private async Task LoginWithGoogle()
+    {
+        var isSuccess = await authService.LoginWithGoogleAsync();
+
+        if (isSuccess)
+        {
+            navigationManager.NavigateTo("/");
+        }
+        else
+        {
+            snackbar.Add("Đăng nhập thất bại", Severity.Error);
+        }
+    }
+
+    public class LoginModel
+    {
+        [Label("Email")]
+        [Required(ErrorMessage = "Email không được để trống")]
+        public string Email { get; set; } = string.Empty;
+        [Label("Mật khẩu")]
+        [Required(ErrorMessage = "Mật khẩu không được để trống")]
+        public string Password { get; set; } = string.Empty;
+        [Label("Nhớ mật khẩu")]
+        public bool RememberMe { get; set; }
+    }
+
+}

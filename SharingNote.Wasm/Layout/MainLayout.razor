@@ -1,0 +1,187 @@
+﻿@inherits LayoutComponentBase
+@inject IDialogService dialogService
+@inject NavigationManager navigationManager
+@inject ISnackbar snackbar
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService localStorage
+
+<MudThemeProvider IsDarkMode="@_isDarkMode" Theme="MyCustomTheme" />
+
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+
+
+    <MudDrawer Class="pt-5" ClipMode="DrawerClipMode.Never" @bind-Open="@_open" Fixed="true"
+               Elevation="0" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md">
+        <MudNavMenu Margin="Margin.Dense">
+            <MudNavLink Ripple="false" Href="/" Match="NavLinkMatch.All" IconColor="Color.Inherit" Icon="@Icons.Material.Filled.Home">
+                TRANG CHỦ
+            </MudNavLink>
+
+            <MudNavLink Ripple="false" Href="/post/search" Match="NavLinkMatch.Prefix" IconColor="Color.Inherit" Icon="@Icons.Material.Filled.Article">
+                DANH SÁCH BÀI VIẾT
+            </MudNavLink>
+            <MudNavLink Ripple="false" Href="/tag" Match="NavLinkMatch.All" IconColor="Color.Inherit" Icon="@Icons.Material.Filled.Flag">
+                TAGS
+            </MudNavLink>
+
+            <AuthorizeView>
+                <NotAuthorized>
+                    <MudNavLink Ripple="false" Href="/register" Match="NavLinkMatch.All" IconColor="Color.Inherit" Icon="@Icons.Material.Filled.AppRegistration">
+                        ĐĂNG KÝ
+                    </MudNavLink>
+                    <MudNavLink Ripple="false" Href="/login" Match="NavLinkMatch.All" IconColor="Color.Inherit" Icon="@Icons.Material.Filled.Login">
+                        ĐĂNG NHẬP
+                    </MudNavLink>
+                </NotAuthorized>
+                <Authorized>
+
+                    <MudNavLink Ripple="false" Href="/post/create" Match="NavLinkMatch.All" IconColor="Color.Inherit" Icon="@Icons.Material.Filled.PostAdd">
+                        TẠO BÀI VIẾT
+                    </MudNavLink>
+                    <MudNavLink Ripple="false" Href="/account" Match="NavLinkMatch.All" IconColor="Color.Inherit" Icon="@Icons.Material.Filled.ManageAccounts">
+                        TÀI KHOẢN
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudMainContent>
+        <AppBar ToggleSidebar="HandleToggleSidebar"
+                IsDarkMode="@_isDarkMode"
+                IsDarkModeChanged="OnDarkModeChanged" />
+
+        <MudContainer Class="mb-3">
+            @Body
+        </MudContainer>
+
+    </MudMainContent>
+
+
+</MudLayout>
+
+@code {
+    private bool _open = true;
+    private bool _isDarkMode = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isDarkMode = await localStorage.GetItemAsync<bool>("isDarkMode");
+
+        if (_isDarkMode)
+        {
+            await JSRuntime.InvokeVoidAsync("document.body.classList.add", "dark-mode");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("document.body.classList.remove", "dark-mode");
+        }
+    }
+
+    private async Task OnDarkModeChanged(bool isDarkMode)
+    {
+        _isDarkMode = isDarkMode;
+
+        if (_isDarkMode)
+        {
+            await JSRuntime.InvokeVoidAsync("document.body.classList.add", "dark-mode");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("document.body.classList.remove", "dark-mode");
+        }
+
+        await localStorage.SetItemAsync("isDarkMode", _isDarkMode);
+    }
+
+    private void HandleToggleSidebar()
+    {
+        _open = !_open;
+    }
+
+    private MudTheme MyCustomTheme = new MudTheme()
+        {
+            PaletteLight = new PaletteLight()
+            {
+                Primary = Colors.Blue.Darken2,
+                Secondary = Colors.DeepPurple.Darken2,
+                Success = Colors.Green.Darken2,
+                Info = Colors.LightBlue.Darken2,
+                Warning = Colors.Amber.Darken2,
+                Error = Colors.Red.Darken2,
+                Background = Colors.Gray.Lighten5,
+                DrawerBackground = Colors.Gray.Lighten5,
+                DrawerText = Colors.Gray.Darken4,
+                AppbarText = Colors.Gray.Darken4,
+                ActionDefault = Colors.Gray.Darken4,
+                ActionDisabled = Colors.Gray.Lighten2,
+                ActionDisabledBackground = Colors.Gray.Lighten4,
+                HoverOpacity = 0.04f
+            },
+            PaletteDark = new PaletteDark()
+            {
+                Primary = Colors.Blue.Lighten2,
+                Secondary = Colors.DeepPurple.Lighten2,
+                Success = Colors.Green.Lighten2,
+                Info = Colors.LightBlue.Lighten2,
+                Warning = Colors.Amber.Lighten2,
+                Error = Colors.Red.Lighten2,
+                Background = Colors.Gray.Darken3,
+                DrawerBackground = Colors.Gray.Darken3,
+                DrawerText = Colors.Gray.Lighten4,
+                AppbarText = Colors.Gray.Lighten4,
+                ActionDefault = Colors.Gray.Lighten4,
+                ActionDisabled = Colors.Gray.Darken2,
+                ActionDisabledBackground = Colors.Gray.Darken4,
+                HoverOpacity = 0.04f
+            },
+            Typography = new Typography()
+            {
+                Default = new Default()
+                {
+                    FontFamily = new[] { "Montserrat", "Poppins", "Helvetica", "Arial", "sans-serif" },
+                    FontSize = "14px"
+                },
+                H1 = new H1
+                {
+                    FontSize = "26px",
+                    FontWeight = 600
+                },
+                H2 = new H2
+                {
+                    FontSize = "24px",
+                    FontWeight = 600
+                },
+                H3 = new H3
+                {
+                    FontSize = "22px",
+                    FontWeight = 600
+                },
+                H4 = new H4
+                {
+                    FontSize = "20px",
+                    FontWeight = 600
+                },
+                H5 = new H5
+                {
+                    FontSize = "18px",
+                    FontWeight = 600
+                },
+                H6 = new H6
+                {
+                    FontSize = "16px",
+                    FontWeight = 600
+                },
+                Input = new Input()
+                {
+                    FontSize = "14px"
+                }
+            },
+
+        };
+}

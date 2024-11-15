@@ -1,0 +1,196 @@
+﻿@using System.Security.Claims
+
+
+@inject ICommentService commentService
+
+@inject IDialogService dialogService
+@inject IUserService userService
+@inject AuthorizationService authorizationService
+
+@if (CommentDto != null)
+{
+    <MudStack Row="true">
+        <MudAvatar Size="Size.Medium">
+            <MudImage Src="@(_commenter != null ? _commenter.Avatar : "")" />
+        </MudAvatar>
+
+        <MudStack Spacing="0" Style="width: 100%">
+            <MudPaper Class="rounded-lg px-4 py-2" Elevation="1" Outlined="true">
+                @if (_commenter != null)
+                {
+                    <MudText Style="font-weight: bold" Typo="Typo.body2">
+                        @_commenter.DisplayName
+                    </MudText>
+                }
+                else
+                {
+                    <MudText Style="font-weight: bold" Typo="Typo.body2">
+                        Người dùng đã bị xoá
+                    </MudText>
+                }
+
+
+                <MudText Typo="Typo.body2">
+                    @((MarkupString)CommentDto.Content)
+                </MudText>
+            </MudPaper>
+
+
+            <AuthorizeView>
+                <Authorized>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Class="px-3">
+                        <MudText Typo="Typo.caption">
+                            Bình luận vào @CommentDto.PostedDate.ToLocalTime().ToString("HH:mm dd/MM/yyyy")
+                        </MudText>
+
+                        @if (!CommentDto.ParentCommentId.HasValue)
+                        {
+                            <MudLink Typo="Typo.overline" Style="font-weight: bold"
+                                     Underline="Underline.None"
+                                     OnClick="@ReplyComment">
+                                Trả lời
+                            </MudLink>
+                        }
+
+                        @if (_canManageComment)
+                        {
+                            <MudLink Typo="Typo.overline" Style="font-weight: bold"
+                                     Underline="Underline.None"
+                                     Color="Color.Error"
+                                     OnClick="@OpenDeleteCommentDialog">
+                                Xoá
+                            </MudLink>
+                        }
+
+                    </MudStack>
+                </Authorized>
+            </AuthorizeView>
+
+
+
+            <AuthorizeView Context="UserContext">
+                <Authorized>
+                    @if (_showReplies)
+                    {
+                        if (!_isRepliesShowing)
+                        {
+                            <MudStack>
+                                <CommentList CommentInputLines="1"
+                                             PostId="@CommentDto.PostId"
+                                             ParentCommentId="@CommentDto.Id" />
+                            </MudStack>
+                        }
+                        else
+                        {
+                            <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+                        }
+                    }
+                    else
+                    {
+                        if (CommentDto.ChildrenCount > 0)
+                        {
+                            <MudLink Typo="Typo.subtitle2" Color="Color.Secondary" Class="px-3"
+                                     OnClick="@ShowRelies"
+                                     Underline="Underline.None">Xem @CommentDto.ChildrenCount phản hồi</MudLink>
+                        }
+                    }
+                </Authorized>
+            </AuthorizeView>
+        </MudStack>
+
+    </MudStack>
+
+
+}
+
+
+
+@code {
+    [Parameter]
+    public CommentDto? CommentDto { get; set; }
+
+    GetUserResponse? _commenter;
+
+    [Parameter, EditorRequired]
+    public required string UserAvatar { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnCommentDeleted { get; set; }
+
+    bool _showReplies = false;
+    bool _isRepliesShowing = false;
+
+    bool _canManageComment = false;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    ClaimsPrincipal? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = (await AuthenticationStateTask).User;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CommentDto != null)
+        {
+            var response = await userService.GetUserByIdAsync(CommentDto.UserId);
+            if (response != null)
+            {
+                _commenter = response;
+                _canManageComment = _user != null &&
+                    await authorizationService.IsAuthorizedToManageComment(_user, CommentDto.Id);
+            }
+        }
+    }
+
+    private async Task ShowRelies()
+    {
+
+        _isRepliesShowing = true;
+
+        _showReplies = true;
+        await Task.Delay(500);
+
+
+        _isRepliesShowing = false;
+    }
+
+    private void ReplyComment()
+    {
+        _showReplies = true;
+    }
+
+    private async Task OpenDeleteCommentDialog()
+    {
+        var dialogOptions = new DialogOptions()
+            {
+                FullWidth = true
+            };
+
+        var parameters = new DialogParameters<DeleteCommentDialog>
+        {
+            { "CommentId", CommentDto!.Id }
+        };
+
+        var dialog = await dialogService.ShowAsync<DeleteCommentDialog>("Xoá bình luận", parameters, dialogOptions);
+
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && CommentDto != null)
+        {
+            await OnCommentDeleted.InvokeAsync(CommentDto.Id);
+        }
+    }
+
+    private void HandleParentCommentDeleted(Guid commentId)
+    {
+        if (CommentDto != null && CommentDto.Id == commentId)
+        {
+            CommentDto = null;
+            StateHasChanged();
+        }
+    }
+}

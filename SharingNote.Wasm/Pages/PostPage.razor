@@ -1,0 +1,219 @@
+﻿@page "/post/{Id:guid}"
+@using HtmlAgilityPack
+@using Markdig
+@using Markdig.Syntax
+@using System.Text
+@using System.Text.RegularExpressions
+@using SharedKernel.Authentication.Extensions
+@using SharingNote.Wasm.Services
+@using System.Security.Claims
+@using static SharingNote.Wasm.Components.TableOfContent
+
+@inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+@inject ISnackbar snackbar
+@inject AuthorizationService authorizationService
+@inject MarkdownService markdownService
+@inject IPostService postService
+@inject IUserService userService
+@inject ILocalStorageService localStorage
+
+
+@if (_post == null)
+{
+    <MudText Typo="Typo.h1" Align="Align.Center" Color="Color.Primary">Đang tải...</MudText>
+}
+else
+{
+    <MudGrid>
+
+        <MudItem md="@(_hasToc ? 9 : 12)">
+            <MudStack>
+                <MudStack Row="true" Class="px-10" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudAvatar Size="Size.Medium">
+                            <MudImage Src="@_author?.Avatar" />
+                        </MudAvatar>
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Style="font-weight: bold">
+
+                                @if (_author != null)
+                                {
+                                    if (_user != null && _author.Id == _user.GetUserId())
+                                    {
+                                        @("Bạn")
+                                    }
+                                    else
+                                    {
+                                        @_author.DisplayName
+                                    }
+                                }
+                                else
+                                {
+                                    @("anonymous user")
+                                }
+                                đã đăng vào @_post.PublicationDate.ToShortDateString()
+                            </MudText>
+                            @if (_author != null && _user != null && _author.Id != _user.GetUserId())
+                            {
+                                <MudLink Typo="Typo.caption" Href="@($"/post/search?userId={_author.Id}")">
+                                    Xem các bài viết khác của tác giả
+                                </MudLink>
+                            }
+                        </MudStack>
+                    </MudStack>
+
+                    <MudStack Row="true" Spacing="0" AlignItems="AlignItems.Center">
+                        <MudTooltip Color="Color.Primary" Text="Tải file markdown">
+                            <MudIconButton Color="Color.Warning"
+                                           Icon="@Icons.Material.Filled.FileDownload"
+                                           OnClick="DownloadMarkdown" />
+                        </MudTooltip>
+
+                        @if (_canManagePost)
+                        {
+                            <MudTooltip Color="Color.Primary" Text="Chỉnh sửa bài viết">
+                                <MudIconButton Color="Color.Info"
+                                               Icon="@Icons.Material.Filled.ModeEdit"
+                                               OnClick="@(() => navigationManager.NavigateTo($"post/edit/{Id}"))" />
+                            </MudTooltip>
+                        }
+
+                    </MudStack>
+
+                </MudStack>
+
+                <MudText Align="Align.Center" Typo="Typo.h1" Style="font-weight: 600">@_post.Title</MudText>
+
+
+
+                @if (_isDarkMode)
+                {
+                    <MudPaper Class="pa-4" Outlined="true">
+                        <MudMarkdown Value="@_post.Content"
+                                     CodeBlockTheme="CodeBlockTheme.Vs2015" />
+                    </MudPaper>
+                }
+                else
+                {
+                    <MudPaper Class="pa-4" Outlined="true">
+                        <MudMarkdown Value="@_post.Content"
+                                     CodeBlockTheme="CodeBlockTheme.Vs" />
+                    </MudPaper>
+                }
+
+            </MudStack>
+        </MudItem>
+
+
+        @if (_hasToc)
+        {
+            <MudItem md="3" Class="pt-5">
+                <TableOfContent Title="Mục lục"
+                                MarkdownContent="@_post.Content"
+                                Height="300px"
+                                Width="250px"
+                                MaxLevel="4"
+                                Elevation="4"
+                                IsFixed="true"
+                                TextTypo="Typo.subtitle2"
+                                Color="Color.Error"
+                                ExpandButtonIconColor="Color.Error"
+                                Class="py-2 mt-0" />
+            </MudItem>
+        }
+    </MudGrid>
+
+    <MudStack Class="mt-5">
+        <CommentList PostId="Id" />
+    </MudStack>
+}
+
+@code {
+    bool _isDarkMode = false;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    PostResponse? _post;
+
+    bool _canManagePost;
+
+    bool _hasToc = true;
+
+    GetUserResponse? _author;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+    ClaimsPrincipal? _user;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "document.dispatchEvent(new Event('DOMContentLoaded'))");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = (await AuthenticationStateTask).User;
+
+
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Load current post
+        var result = await postService.GetPostAsync(Id);
+        if (result != null)
+        {
+            _post = result;
+            _author = await userService.GetUserByIdAsync(_post.UserId);
+            _canManagePost = _user != null &&
+                await authorizationService.IsAuthorizedToManagePost(_user, _post.Id);
+
+
+        }
+        else
+        {
+            _post = null;
+        }
+
+
+        _hasToc = _post != null
+            && markdownService.GetHeadingsFromMarkdown(_post.Content).Any();
+
+        localStorage.Changed += OnLocalStorageChanged;
+    }
+
+    private async void OnLocalStorageChanged(object? sender, ChangedEventArgs e)
+    {
+        if (e.Key == "isDarkMode")
+        {
+            _isDarkMode = await localStorage.GetItemAsync<bool>("isDarkMode");
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadMarkdown()
+    {
+        if (_post != null)
+        {
+            var markdownContent = _post.Content;
+
+            var fileName = $"{_post.Title}.md";
+            var fileContent = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(markdownContent));
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, fileContent);
+        }
+    }
+
+
+    private string GenerateAnchorName(string headingText)
+    {
+        var anchor = headingText.ToLower().Replace(" ", "-");
+        anchor = Regex.Replace(anchor, @"-+", "-");
+        anchor = Regex.Replace(anchor, @"[^a-z0-9\-]", "");
+
+        return $"{anchor}";
+    }
+}

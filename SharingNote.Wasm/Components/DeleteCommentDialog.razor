@@ -1,0 +1,57 @@
+﻿@inject ISnackbar snackbar
+@inject ICommentService commentService
+
+<MudDialog>
+    <DialogContent>
+
+        <MudText Typo="Typo.body1">
+            Bạn có chắn chắn muốn xóa bình luận này không?
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        @if (isSubmitting)
+        {
+            <MudProgressCircular Indeterminate="true" Class="ml-4 mr-4"
+                                 Color="Color.Primary" Size="Size.Small" />
+        }
+        else
+        {
+            <MudButton Color="Color.Default" OnClick="Cancel">Thoát</MudButton>
+            <MudButton Color="Color.Error" OnClick="Submit">Xác nhận xóa</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance? MudDialog { get; set; }
+
+    bool isSubmitting = false;
+
+    [Parameter]
+    public Guid CommentId { get; set; }
+
+    private async Task Submit()
+    {
+        isSubmitting = true;
+
+        var result = await commentService.DeleteCommentAsync(CommentId);
+
+        isSubmitting = false;
+
+        if (result.IsSuccessStatusCode)
+        {
+            snackbar.Add("Xóa thành công.", Severity.Success);
+            MudDialog?.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            snackbar.Add("Có lỗi xảy ra.", Severity.Error);
+            MudDialog?.Close(DialogResult.Cancel());
+        }
+    }
+
+    private void Cancel() => MudDialog?.Cancel();
+
+
+}

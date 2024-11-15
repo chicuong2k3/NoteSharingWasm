@@ -1,0 +1,117 @@
+﻿@page "/tag"
+
+@using System.Net.Http.Json
+@using System.Security.Claims
+
+@inject NavigationManager navigationManager
+@inject IDialogService dialogService
+@inject ITagService tagService
+@inject AuthorizationService authorizationService
+
+<AuthorizeView Context="UserContext">
+    <Authorized>
+        <MudButton DropShadow="false"
+                   Class="mb-3 rounded-pill" Variant="Variant.Filled" Size="Size.Small"
+                   OnClick="@(() => navigationManager.NavigateTo("/tag/create"))"
+                   Color="Color.Success"
+                   Ripple="false">Tạo tag</MudButton>
+    </Authorized>
+</AuthorizeView>
+
+
+<MudTable Items="@Tags" Dense="true" Hover="true" Bordered="true" Striped="true" Filter="new Func<TagResponse, bool>(FilterFunc1)">
+
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Danh sách Tags</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString" Immediate="true"
+                      Placeholder="Tìm kiếm" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Tên tag</MudTh>
+        <MudTh>Hành động</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd>
+            @if (_canManageTags.ContainsKey(context.Id) && _canManageTags[context.Id])
+            {
+                <MudIconButton OnClick="@(() => OpenDeleteTagDialog(context.Id))"
+                               Size="Size.Small"
+                               Color="Color.Error"
+                               Icon="@Icons.Material.Filled.Close" />
+            }
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    Dictionary<Guid, bool> _canManageTags = new();
+
+    private string searchString = "";
+
+    private List<TagResponse> Tags = [];
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    ClaimsPrincipal? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = (await AuthenticationStateTask).User;
+        Tags = (await tagService.GetTagsAsync()).ToList();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        foreach (var tag in Tags)
+        {
+            _canManageTags[tag.Id] = _user != null &&
+                    await authorizationService.IsAuthorizedToManageTag(_user, tag.Id);
+        }
+    }
+
+    private bool FilterFunc1(TagResponse tag) => FilterFunc(tag, searchString);
+
+    private bool FilterFunc(TagResponse tag, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (tag.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task OpenDeleteTagDialog(Guid tagId)
+    {
+        var dialogOptions = new DialogOptions()
+            {
+                FullWidth = true
+            };
+
+        var tag = Tags.Find(x => x.Id == tagId);
+
+        if (tag == null)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<DeleteTagDialog>
+        {
+            { "Tag", tag }
+        };
+
+        var dialog = await dialogService.ShowAsync<DeleteTagDialog>("Xoá tag", parameters, dialogOptions);
+
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            Tags.Remove(tag);
+        }
+    }
+}

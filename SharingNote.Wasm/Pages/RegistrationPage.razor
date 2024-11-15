@@ -1,0 +1,109 @@
+﻿@page "/register"
+
+@inject ISnackbar snackbar
+@inject NavigationManager navigationManager
+@inject IUserService userService
+
+<PageTitle>Đăng ký</PageTitle>
+
+<MudGrid Justify="Justify.Center" Class="mt-5">
+    <MudItem xs="10" md="7">
+        <MudPaper Elevation="0" Class="pa-8" Style="width: 100%;" Outlined="true">
+            <MudForm Spacing="3" @ref="form" Model="@_model" @bind-IsValid="_isFormValid">
+                <MudText Typo="Typo.h1" Align="Align.Center">ĐĂNG KÝ</MudText>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Elevation="0">
+                        @ErrorMessage
+                    </MudAlert>
+                }
+
+                <MudTextField InputType="InputType.Email" Disabled="_isSubmitting"
+                              @bind-Value="_model.Email" For="@(() => _model.Email)"
+                              Immediate="true" ShrinkLabel="true"
+                              Margin="Margin.Dense" Variant="Variant.Outlined" />
+
+                <MudTextField InputType="InputType.Password" Disabled="_isSubmitting"
+                              @bind-Value="_model.Password" For="@(() => _model.Password)"
+                              Immediate="true" ShrinkLabel="true"
+                              Margin="Margin.Dense" Variant="Variant.Outlined" />
+
+                <MudTextField InputType="InputType.Password" Disabled="_isSubmitting"
+                              @bind-Value="_model.ConfirmPassword" For="@(() => _model.ConfirmPassword)"
+                              Immediate="true" ShrinkLabel="true"
+                              Margin="Margin.Dense" Variant="Variant.Outlined" />
+
+
+                @if (_isSubmitting)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               DropShadow="false" Class="rounded-pill"
+                               OnClick="@(Submit)">Đăng ký</MudButton>
+                }
+            </MudForm>
+
+            <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-3">
+                Đã có tài khoản?
+                <MudLink OnClick="@(() => navigationManager.NavigateTo("/login"))"
+                         Class="text-decoration-none" Typo="Typo.body2">
+                    Đăng nhập ngay
+                </MudLink>
+            </MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+
+    MudForm? form;
+
+    RegistrationModel _model = new();
+    bool _isFormValid = false;
+    bool _isSubmitting = false;
+    string ErrorMessage = string.Empty;
+
+    private async Task Submit()
+    {
+        await form!.Validate();
+
+        if (_isFormValid)
+        {
+
+            var response = await userService.RegisterUserAsync(_model.Email, _model.Password);
+            if (response.IsSuccessStatusCode)
+            {
+                snackbar.Add("Đăng ký tài khoản thành công", Severity.Success);
+                navigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                ErrorMessage = "Email đã tồn tại trong hệ thống";
+            }
+        }
+    }
+
+
+    public class RegistrationModel
+    {
+        [Label("Email")]
+        [Required(ErrorMessage = "Email không được để trống")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        public string Email { get; set; } = string.Empty;
+
+        [Label("Mật khẩu")]
+        [Required(ErrorMessage = "Mật khẩu không được để trống")]
+        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
+        public string Password { get; set; } = string.Empty;
+
+        [Label("Xác nhận mật khẩu")]
+        [Required(ErrorMessage = "Xác nhận mật khẩu không được để trống")]
+        [Compare(nameof(Password), ErrorMessage = "Mật khẩu và xác nhận mật khẩu không khớp")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+}

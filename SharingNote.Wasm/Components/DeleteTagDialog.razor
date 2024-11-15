@@ -1,0 +1,70 @@
+﻿@inject ISnackbar snackbar
+@inject ITagService tagService
+
+
+<MudDialog>
+    <DialogContent>
+        @if (Tag == null)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        else
+        {
+            <MudText Typo="Typo.body1">
+                Bạn có chắn chắn muốn xóa tag
+                <MudText Color="Color.Primary" Style="display: inline-block">
+                    @Tag.Name
+                </MudText> không?
+            </MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        @if (isSubmitting)
+        {
+            <MudProgressCircular Indeterminate="true" Class="ml-4 mr-4"
+                                 Color="Color.Primary" Size="Size.Small" />
+        }
+        else
+        {
+            <MudButton Color="Color.Default" OnClick="Cancel">Thoát</MudButton>
+            <MudButton Color="Color.Error" OnClick="Submit">Xác nhận xóa</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance? MudDialog { get; set; }
+
+    bool isSubmitting = false;
+
+    [Parameter]
+    public TagResponse? Tag { get; set; }
+
+    private async Task Submit()
+    {
+        isSubmitting = true;
+
+        if (Tag == null)
+        {
+            return;
+        }
+
+        var result = await tagService.DeleteTagAsync(Tag.Id);
+
+        isSubmitting = false;
+
+        if (result.IsSuccessStatusCode)
+        {
+            snackbar.Add("Xóa thành công.", Severity.Success);
+            MudDialog?.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            snackbar.Add("Có lỗi xảy ra.", Severity.Error);
+            MudDialog?.Close(DialogResult.Cancel());
+        }
+    }
+
+    private void Cancel() => MudDialog?.Cancel();
+}

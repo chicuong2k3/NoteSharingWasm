@@ -1,0 +1,222 @@
+﻿@page "/post/search"
+
+@inject ITagService tagService
+@inject IPostService postService
+@inject IJSRuntime JSRuntime
+
+
+@if (!string.IsNullOrEmpty(UserId))
+{
+    <MudButton DropShadow="false" Color="Color.Success" Ripple="false" Class="mb-3"
+               OnClick="DownloadAll"
+               Size="Size.Small">
+        Tải xuống tất cả bài viết
+    </MudButton>
+}
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" md="4">
+        <MudTextField Label="Tìm kiếm" T="string"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
+                      ValueChanged="OnPostSearchTextChanged"
+                      Placeholder="Tìm kiếm bài viết..." />
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MudSelect T="Guid" Label="Lọc theo tag"
+                   Variant="Variant.Outlined" Margin="Margin.Dense"
+                   MultiSelectionTextFunc="@(new Func<List<string>, string>(GetMultiSelectionText))"
+                   MultiSelection="true" SelectedValuesChanged="OnSelectedTagsChanged">
+            @foreach (var tag in _tags)
+            {
+                <MudSelectItem T="Guid" Value="@tag.Id" Ripple="false">
+
+                    @tag.Name
+                </MudSelectItem>
+            }
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="7" md="2">
+        <MudSelect T="string" Label="Sắp xếp theo" Variant="Variant.Outlined" Margin="Margin.Dense"
+                   Value="@_sortColumn"
+                   ValueChanged="OnSortColumnChanged">
+            <MudSelectItem T="string" Value="@("title")">Tiêu đề</MudSelectItem>
+            <MudSelectItem T="string" Value="@("publicationDate")">Ngày đăng</MudSelectItem>
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="5" md="2">
+        <MudSelect T="string" Label="Thứ tự" Variant="Variant.Outlined" Margin="Margin.Dense"
+                   ValueChanged="OnSortOrderChanged" Value="@_sortOrder">
+            <MudSelectItem T="string" Value="@("asc")">Tăng dần</MudSelectItem>
+            <MudSelectItem T="string" Value="@("desc")">Giảm dần</MudSelectItem>
+        </MudSelect>
+    </MudItem>
+</MudGrid>
+
+
+<MudStack Spacing="2">
+
+    @if (!_posts.Any() && _isLoading)
+    {
+        <MudText Typo="Typo.h1" Align="Align.Center">Đang tải bài viết...</MudText>
+    }
+    else if (!_posts.Any() && !_isLoading)
+    {
+        <MudText Typo="Typo.h1" Align="Align.Center">Không có bài viết nào</MudText>
+    }
+    else
+    {
+        @foreach (var post in _posts)
+        {
+            <PostRow Post="@post" OnPostDeleted="@(() => RemovePostFromList(post.Id))" />
+        }
+
+        <MudStack Justify="Justify.Center" Row="true" Class="mt-3">
+            @if (_count > 1)
+            {
+                <MudPagination @ref="_pagination"
+                               SelectedChanged="OnSelectedChange"
+                               Selected="@_selectedPage"
+                               Variant="Variant.Outlined"
+                               Count="@_count" />
+            }
+        </MudStack>
+    }
+
+</MudStack>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? UserId { get; set; }
+
+    List<PostDto> _posts = new();
+    int _selectedPage = 1;
+    int _count = 0;
+    MudPagination? _pagination;
+
+    string _queryText = string.Empty;
+
+    List<Guid> _tagIds = [];
+    List<TagResponse> _tags = [];
+
+    string _sortColumn = "title";
+    string _sortOrder = "asc";
+
+    bool _isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await tagService.GetTagsAsync();
+
+        if (result != null)
+        {
+            _tags = result.ToList();
+        }
+
+        await UpdatePage();
+    }
+
+    private async Task UpdatePage()
+    {
+
+        _isLoading = true;
+
+        Guid? userIdGuid = null;
+        if (Guid.TryParse(UserId, out var parsedUserId))
+        {
+            userIdGuid = parsedUserId;
+        }
+
+
+        var result = await postService.GetPostsAsync(_selectedPage, 5, _queryText, $"{_sortColumn} {_sortOrder}", _tagIds, userIdGuid);
+
+        if (result != null)
+        {
+            _count = (int)result.PagedInfo.TotalPages;
+
+            _posts = result.Value.ToList();
+        }
+
+
+        _isLoading = true;
+    }
+
+    private async Task OnPostSearchTextChanged(string newText)
+    {
+        _queryText = newText;
+        _selectedPage = 1;
+        await UpdatePage();
+    }
+
+    private async Task OnSelectedTagsChanged(IEnumerable<Guid> tagIds)
+    {
+        _tagIds = tagIds.ToList();
+        _selectedPage = 1;
+        await UpdatePage();
+    }
+
+    private string GetMultiSelectionText(List<string> selectedValues)
+    {
+        var selectedTags = _tags.Where(x => selectedValues.Contains(x.Id.ToString()));
+
+        var count = selectedValues.Count;
+
+        if (count == 0) return "Chưa có tag nào được chọn";
+
+        return $"Có {count} tag được chọn: {string.Join(", ", selectedTags.Select(x => x.Name))}";
+    }
+
+    private async Task OnSortColumnChanged(string sortColumn)
+    {
+        _sortColumn = sortColumn;
+        _selectedPage = 1;
+        await UpdatePage();
+    }
+
+    private async Task OnSortOrderChanged(string sortOrder)
+    {
+        _sortOrder = sortOrder;
+        _selectedPage = 1;
+        await UpdatePage();
+    }
+
+    private async Task OnSelectedChange(int selectedPage)
+    {
+        _selectedPage = selectedPage;
+        await UpdatePage();
+    }
+
+    private async void RemovePostFromList(Guid postId)
+    {
+        _posts = _posts.Where(p => p.Id != postId).ToList();
+
+        if (!_posts.Any() && _selectedPage == 1)
+        {
+            await UpdatePage();
+        }
+        else if (!_posts.Any() && _selectedPage > 1)
+        {
+            _selectedPage--;
+            await UpdatePage();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task DownloadAll()
+    {
+        foreach (var post in _posts)
+        {
+            var p = await postService.GetPostAsync(post.Id);
+            if (p != null)
+            {
+                var markdownContent = p.Content;
+
+                var fileName = $"{post.Title}.md";
+                var fileContent = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(markdownContent));
+
+                await JSRuntime.InvokeVoidAsync("downloadFile", fileName, fileContent);
+            }
+        }
+    }
+
+}

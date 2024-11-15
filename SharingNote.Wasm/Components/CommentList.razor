@@ -1,0 +1,138 @@
+﻿@using SharedKernel.Authentication.Extensions
+
+
+@inject IUserService userService
+@inject ICommentService commentService
+
+<MudStack Spacing="3">
+    @foreach (var comment in _comments)
+    {
+        <Comment CommentDto="@comment"
+                 UserAvatar="@_userAvatar" @ref="_commentComponents[comment.Id]"
+                 OnCommentDeleted="HandleCommentDeleted" />
+    }
+
+    @if (_timeCursor.HasValue)
+    {
+        <MudStack AlignItems="AlignItems.Center">
+            @if (!_isLoading)
+            {
+                <MudButton Variant="Variant.Text" Class="rounded-pill"
+                           Color="Color.Primary" FullWidth="false"
+                           OnClick="LoadCommentsAsync">Xem thêm</MudButton>
+            }
+            else
+            {
+                <MudProgressCircular Color="Color.Primary" />
+            }
+        </MudStack>
+    }
+
+    <AuthorizeView Context="UserContext">
+        <Authorized>
+            <CommentInput UserAvatar="@_userAvatar" Placeholder="Viết bình luận..."
+                          Lines="@CommentInputLines"
+                          OnCommentSubmitted="@((string comment) => HandleCommentSubmitted(UserContext.User.GetUserId(), comment))" />
+        </Authorized>
+        <NotAuthorized>
+            <MudAlert Severity="Severity.Warning" NoIcon="true" ContentAlignment="HorizontalAlignment.Center">
+                <MudText Align="Align.Center">Đăng nhập để bình luận</MudText>
+            </MudAlert>
+        </NotAuthorized>
+    </AuthorizeView>
+
+</MudStack>
+
+
+@code {
+
+    List<CommentDto> _comments = new();
+
+    Dictionary<Guid, Comment> _commentComponents = new();
+
+    [Parameter, EditorRequired]
+    public Guid PostId { get; set; }
+
+    Guid _oldPostId;
+
+    [Parameter]
+    public Guid? ParentCommentId { get; set; }
+
+    [Parameter]
+    public int CommentInputLines { get; set; } = 3;
+
+
+    string _userAvatar = string.Empty;
+
+    DateTime? _timeCursor;
+
+    bool _isLoading = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_oldPostId != PostId)
+        {
+            _comments.Clear();
+            _oldPostId = PostId;
+
+            if (ParentCommentId.HasValue)
+            {
+                _timeCursor = DateTime.MinValue;
+            }
+            else
+            {
+                _timeCursor = DateTime.UtcNow;
+            }
+        }
+
+        await LoadCommentsAsync();
+
+        var user = await userService.GetUserInfoAsync();
+        _userAvatar = user?.Avatar ?? string.Empty;
+    }
+
+    private async Task LoadCommentsAsync()
+    {
+        if (_timeCursor.HasValue)
+        {
+            _isLoading = true;
+
+            var response = await commentService.GetCommentsAsync(PostId, 3, ParentCommentId, ParentCommentId.HasValue ? "asc" : "desc", _timeCursor.Value);
+
+            if (response != null)
+            {
+                _comments.AddRange(response.Comments.ToList());
+                _timeCursor = response.TimeCursor;
+            }
+
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleCommentSubmitted(Guid userId, string comment)
+    {
+
+        var result = await commentService.CreateCommentAsync(new CreateCommentRequest(PostId, comment, ParentCommentId));
+        if (result != null)
+        {
+            _comments.Add(new CommentDto(
+                result.Id,
+                result.UserId,
+                result.PostId,
+                result.Content,
+                result.PostedDate,
+                result.LastModifiedDate,
+                result.ParentId,
+                0
+            ));
+        }
+    }
+
+    private void HandleCommentDeleted(Guid commentId)
+    {
+        _comments.RemoveAll(c => c.Id == commentId);
+        _commentComponents[commentId].CommentDto = null;
+        _commentComponents.Remove(commentId);
+        StateHasChanged();
+    }
+}

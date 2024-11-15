@@ -1,0 +1,7 @@
+﻿.comment-input ::deep .mud-input-outlined-border {
+    border: none !important;
+}
+
+.comment-input ::deep .mud-input-control {
+    margin: 0 !important;
+}
