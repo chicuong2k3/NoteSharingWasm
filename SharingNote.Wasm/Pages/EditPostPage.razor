@@ -9,7 +9,11 @@
 @inject ITagService tagService
 @inject AuthorizationService authorizationService
 
-@if (Model != null && _canManagePost)
+@if (Model == null)
+{
+    <MudText Typo="Typo.h1" Align="Align.Center" Color="Color.Primary">Đang tải...</MudText>
+}
+else if (_canManagePost)
 {
     <EditForm Model="@Model" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
@@ -58,7 +62,7 @@
         @if (!_isSubmitting)
         {
             <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success" FullWidth="true"
-                       Class="mt-3 rounded-pill" DropShadow="false" Disabled="@(Model.TagIds.Count == 0)">
+                       Class="mt-3 rounded-pill" DropShadow="false">
                 Lưu bài viết
             </MudButton>
         }
@@ -79,7 +83,7 @@ else
     [Parameter]
     public Guid Id { get; set; }
 
-    UpdatePostRequest? Model;
+    UpdatePostRequest? Model = null;
 
     List<TagResponse> _tags = [];
 
@@ -90,12 +94,16 @@ else
 
     ClaimsPrincipal? _user;
 
-    private bool _canManagePost;
+    private bool _canManagePost = false;
     bool _isSubmitting = false;
 
     protected override async Task OnInitializedAsync()
     {
+
         _user = (await AuthenticationStateTask).User;
+        _canManagePost = _user != null &&
+            await authorizationService.IsAuthorizedToManagePost(_user, Id);
+
 
         var result = await postService.GetPostAsync(Id);
 
@@ -114,8 +122,6 @@ else
         _tags = (await tagService.GetTagsAsync()).OrderBy(tag => tag.Name).ToList();
 
 
-        _canManagePost = _user != null &&
-            await authorizationService.IsAuthorizedToManagePost(_user, Id);
     }
 
     private string GetMultiSelectionText(List<string> selectedValues)

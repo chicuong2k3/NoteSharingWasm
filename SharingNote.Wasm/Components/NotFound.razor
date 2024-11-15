@@ -1,0 +1,16 @@
+﻿@inject NavigationManager navigationManager
+
+<MudStack AlignItems="AlignItems.Center">
+
+    <MudText Typo="Typo.h3" Color="Color.Info">Địa chỉ không tồn tại.</MudText>
+
+    <MudButton Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
+               Color="Color.Secondary" Class="rounded-0"
+               OnClick="@(() => navigationManager.NavigateTo("/"))">
+        Quay lại trang chủ
+    </MudButton>
+</MudStack>
+
+@code {
+
+}

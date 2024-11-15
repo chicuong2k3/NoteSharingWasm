@@ -156,6 +156,9 @@ else
     {
         _user = (await AuthenticationStateTask).User;
 
+        _isDarkMode = await localStorage.GetItemAsync<bool>("isDarkMode");
+
+        localStorage.Changed += OnLocalStorageChanged;
 
     }
 
@@ -180,8 +183,6 @@ else
 
         _hasToc = _post != null
             && markdownService.GetHeadingsFromMarkdown(_post.Content).Any();
-
-        localStorage.Changed += OnLocalStorageChanged;
     }
 
     private async void OnLocalStorageChanged(object? sender, ChangedEventArgs e)
@@ -215,5 +216,10 @@ else
         anchor = Regex.Replace(anchor, @"[^a-z0-9\-]", "");
 
         return $"{anchor}";
+    }
+
+    public void Dispose()
+    {
+        localStorage.Changed -= OnLocalStorageChanged;
     }
 }

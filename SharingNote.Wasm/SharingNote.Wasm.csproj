@@ -5,8 +5,6 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 
-		<BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
-		<InvariantGlobalization>true</InvariantGlobalization>
 		<PublishTrimmed>true</PublishTrimmed>
 		<RunAOTCompilation>true</RunAOTCompilation>
 	</PropertyGroup>

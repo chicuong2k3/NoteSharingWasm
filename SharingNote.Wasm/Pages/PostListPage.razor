@@ -17,7 +17,8 @@
 <MudGrid Class="mb-4">
     <MudItem xs="12" md="4">
         <MudTextField Label="Tìm kiếm" T="string"
-                      Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
+                      Variant="Variant.Outlined" Immediate="true"
+                      Margin="Margin.Dense"
                       ValueChanged="OnPostSearchTextChanged"
                       Placeholder="Tìm kiếm bài viết..." />
     </MudItem>
@@ -55,38 +56,43 @@
 
 <MudStack Spacing="2">
 
-    @if (!_posts.Any() && _isLoading)
+    @if (_isLoading)
     {
         <MudText Typo="Typo.h1" Align="Align.Center">Đang tải bài viết...</MudText>
     }
-    else if (!_posts.Any() && !_isLoading)
-    {
-        <MudText Typo="Typo.h1" Align="Align.Center">Không có bài viết nào</MudText>
-    }
     else
     {
-        @foreach (var post in _posts)
+        if (!_posts.Any())
         {
-            <PostRow Post="@post" OnPostDeleted="@(() => RemovePostFromList(post.Id))" />
+            <MudText Typo="Typo.h1" Align="Align.Center">Không có bài viết nào</MudText>
         }
-
-        <MudStack Justify="Justify.Center" Row="true" Class="mt-3">
-            @if (_count > 1)
+        else
+        {
+            @foreach (var post in _posts)
             {
-                <MudPagination @ref="_pagination"
-                               SelectedChanged="OnSelectedChange"
-                               Selected="@_selectedPage"
-                               Variant="Variant.Outlined"
-                               Count="@_count" />
+                <PostRow Post="@post" OnPostDeleted="@(() => RemovePostFromList(post.Id))" />
             }
-        </MudStack>
+
+            <MudStack Justify="Justify.Center" Row="true" Class="mt-3">
+                @if (_count > 1)
+                {
+                    <MudPagination @ref="_pagination"
+                                   SelectedChanged="OnSelectedChange"
+                                   Selected="@_selectedPage"
+                                   Variant="Variant.Outlined"
+                                   Count="@_count" />
+                }
+            </MudStack>
+        }
     }
+
 
 </MudStack>
 
 @code {
     [SupplyParameterFromQuery]
     public string? UserId { get; set; }
+    Guid? _userIdGuid = null;
 
     List<PostDto> _posts = new();
     int _selectedPage = 1;
@@ -105,6 +111,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _isLoading = true;
+
         var result = await tagService.GetTagsAsync();
 
         if (result != null)
@@ -112,39 +120,61 @@
             _tags = result.ToList();
         }
 
+
+
+        if (Guid.TryParse(UserId, out var parsedUserId))
+        {
+            _userIdGuid = parsedUserId;
+        }
+
+        _isLoading = false;
+
         await UpdatePage();
     }
 
     private async Task UpdatePage()
     {
+        if (_isLoading) return;
 
         _isLoading = true;
 
-        Guid? userIdGuid = null;
-        if (Guid.TryParse(UserId, out var parsedUserId))
+        try
         {
-            userIdGuid = parsedUserId;
+            var result = await postService.GetPostsAsync(
+                _selectedPage, 5, _queryText, $"{_sortColumn} {_sortOrder}", _tagIds, _userIdGuid);
+
+            if (result != null)
+            {
+                _count = (int)result.PagedInfo.TotalPages;
+                _posts = result.Value.ToList();
+            }
+            else
+            {
+                _posts = new List<PostDto>();
+            }
         }
-
-
-        var result = await postService.GetPostsAsync(_selectedPage, 5, _queryText, $"{_sortColumn} {_sortOrder}", _tagIds, userIdGuid);
-
-        if (result != null)
+        catch (Exception ex)
         {
-            _count = (int)result.PagedInfo.TotalPages;
-
-            _posts = result.Value.ToList();
+            Console.WriteLine(ex.Message);
+            _posts = new List<PostDto>();
         }
-
-
-        _isLoading = true;
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task OnPostSearchTextChanged(string newText)
     {
-        _queryText = newText;
-        _selectedPage = 1;
-        await UpdatePage();
+
+
+        if (_queryText != newText)
+        {
+            _queryText = newText;
+            _selectedPage = 1;
+            await UpdatePage();
+        }
     }
 
     private async Task OnSelectedTagsChanged(IEnumerable<Guid> tagIds)
@@ -181,6 +211,8 @@
 
     private async Task OnSelectedChange(int selectedPage)
     {
+        if (_selectedPage == selectedPage) return;
+
         _selectedPage = selectedPage;
         await UpdatePage();
     }
@@ -220,3 +252,4 @@
     }
 
 }
+
