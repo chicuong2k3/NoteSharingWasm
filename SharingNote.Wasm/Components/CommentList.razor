@@ -4,7 +4,7 @@
 @inject IUserService userService
 @inject ICommentService commentService
 
-<MudStack Spacing="3">
+<MudStack Spacing="3" Style="width: 100%">
     @foreach (var comment in _comments)
     {
         <Comment CommentDto="@comment"
@@ -35,7 +35,8 @@
                           OnCommentSubmitted="@((string comment) => HandleCommentSubmitted(UserContext.User.GetUserId(), comment))" />
         </Authorized>
         <NotAuthorized>
-            <MudAlert Severity="Severity.Warning" NoIcon="true" ContentAlignment="HorizontalAlignment.Center">
+            <MudAlert Severity="Severity.Warning" NoIcon="true" Style="width: 100%"
+                      ContentAlignment="HorizontalAlignment.Center">
                 <MudText Align="Align.Center">Đăng nhập để bình luận</MudText>
             </MudAlert>
         </NotAuthorized>

@@ -33,8 +33,6 @@
                               Margin="Margin.Dense" Variant="Variant.Outlined" />
 
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                    <MudSwitch @bind-Value="_model.RememberMe" For="@(() => _model.RememberMe)"
-                               Color="Color.Primary" Size="Size.Small" Disabled="_isSubmitting" />
                     <MudLink Typo="Typo.body2" OnClick="OpenForgotPasswordDialog" Class="text-decoration-none">Quên mật khẩu?</MudLink>
                 </MudStack>
 
@@ -144,8 +142,6 @@
         [Label("Mật khẩu")]
         [Required(ErrorMessage = "Mật khẩu không được để trống")]
         public string Password { get; set; } = string.Empty;
-        [Label("Nhớ mật khẩu")]
-        public bool RememberMe { get; set; }
     }
 
 }

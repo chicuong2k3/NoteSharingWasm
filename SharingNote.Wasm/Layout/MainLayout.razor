@@ -14,10 +14,13 @@
 <MudLayout>
 
 
-    <MudDrawer Class="pt-5" ClipMode="DrawerClipMode.Never" @bind-Open="@_open" Fixed="true"
-               Elevation="0" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md">
-        <MudNavMenu Margin="Margin.Dense">
-            <MudNavLink Ripple="false" Href="/" Match="NavLinkMatch.All" IconColor="Color.Inherit" Icon="@Icons.Material.Filled.Home">
+    <MudDrawer @bind-Open="@_open" Fixed="true"
+               Elevation="0" Variant="DrawerVariant.Responsive"
+               ClipMode="DrawerClipMode.Docked"
+               Breakpoint="Breakpoint.Md">
+        <MudNavMenu Margin="Margin.None">
+            <MudNavLink Ripple="false" Href="/" Match="NavLinkMatch.All"
+                        IconColor="Color.Inherit" Icon="@Icons.Material.Filled.Home">
                 TRANG CHỦ
             </MudNavLink>
 
@@ -72,29 +75,11 @@
     protected override async Task OnParametersSetAsync()
     {
         _isDarkMode = await localStorage.GetItemAsync<bool>("isDarkMode");
-
-        if (_isDarkMode)
-        {
-            await JSRuntime.InvokeVoidAsync("document.body.classList.add", "dark-mode");
-        }
-        else
-        {
-            await JSRuntime.InvokeVoidAsync("document.body.classList.remove", "dark-mode");
-        }
     }
 
     private async Task OnDarkModeChanged(bool isDarkMode)
     {
         _isDarkMode = isDarkMode;
-
-        if (_isDarkMode)
-        {
-            await JSRuntime.InvokeVoidAsync("document.body.classList.add", "dark-mode");
-        }
-        else
-        {
-            await JSRuntime.InvokeVoidAsync("document.body.classList.remove", "dark-mode");
-        }
 
         await localStorage.SetItemAsync("isDarkMode", _isDarkMode);
     }
@@ -149,38 +134,42 @@
                 },
                 H1 = new H1
                 {
-                    FontSize = "26px",
+                    FontSize = "30px",
                     FontWeight = 600
                 },
                 H2 = new H2
                 {
-                    FontSize = "24px",
+                    FontSize = "28px",
                     FontWeight = 600
                 },
                 H3 = new H3
                 {
-                    FontSize = "22px",
+                    FontSize = "26px",
                     FontWeight = 600
                 },
                 H4 = new H4
                 {
-                    FontSize = "20px",
+                    FontSize = "24px",
                     FontWeight = 600
                 },
                 H5 = new H5
                 {
-                    FontSize = "18px",
+                    FontSize = "22px",
                     FontWeight = 600
                 },
                 H6 = new H6
                 {
-                    FontSize = "16px",
+                    FontSize = "20px",
                     FontWeight = 600
                 },
                 Input = new Input()
                 {
                     FontSize = "14px"
-                }
+                },
+                Body1 = new Body1()
+                {
+                    FontSize = "20px"
+                },
             },
 
         };

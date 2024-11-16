@@ -27,7 +27,8 @@ else
 {
     <MudGrid>
 
-        <MudItem md="@(_hasToc ? 9 : 12)">
+
+        <MudItem xs="12" md="@(_hasToc ? 9 : 12)">
             <MudStack>
                 <MudStack Row="true" Class="px-10" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudStack Row="true" AlignItems="AlignItems.Center">
@@ -83,7 +84,7 @@ else
 
                 </MudStack>
 
-                <MudText Align="Align.Center" Typo="Typo.h1" Style="font-weight: 600">@_post.Title</MudText>
+                <MudText Align="Align.Center" Typo="Typo.h1">@_post.Title</MudText>
 
 
 
@@ -103,12 +104,17 @@ else
                 }
 
             </MudStack>
+
+            <MudStack Class="mt-4">
+                <MudText Typo="Typo.h6">Bình luận</MudText>
+                <CommentList PostId="Id" />
+            </MudStack>
         </MudItem>
 
 
         @if (_hasToc)
         {
-            <MudItem md="3" Class="pt-5">
+            <MudItem xs="0" md="3" Class="pt-5">
                 <TableOfContent Title="Mục lục"
                                 MarkdownContent="@_post.Content"
                                 Height="300px"
@@ -122,11 +128,12 @@ else
                                 Class="py-2 mt-0" />
             </MudItem>
         }
+
+
+
     </MudGrid>
 
-    <MudStack Class="mt-5">
-        <CommentList PostId="Id" />
-    </MudStack>
+
 }
 
 @code {
@@ -147,10 +154,6 @@ else
     private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
     ClaimsPrincipal? _user;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        await JSRuntime.InvokeVoidAsync("eval", "document.dispatchEvent(new Event('DOMContentLoaded'))");
-    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,29 +163,40 @@ else
 
         localStorage.Changed += OnLocalStorageChanged;
 
+        var localStoragePost = await localStorage.GetItemAsync<PostResponse>($"post-{Id}");
+
+
+        if (localStoragePost != null)
+        {
+            _post = localStoragePost;
+        }
+        else
+        {
+            // Load current post
+            var result = await postService.GetPostAsync(Id);
+            if (result != null)
+            {
+                _post = result;
+
+                await localStorage.SetItemAsync($"post-{Id}", _post);
+            }
+            else
+            {
+                _post = null;
+            }
+        }
+
+
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        // Load current post
-        var result = await postService.GetPostAsync(Id);
-        if (result != null)
-        {
-            _post = result;
-            _author = await userService.GetUserByIdAsync(_post.UserId);
-            _canManagePost = _user != null &&
-                await authorizationService.IsAuthorizedToManagePost(_user, _post.Id);
-
-
-        }
-        else
-        {
-            _post = null;
-        }
-
-
+        _author = _post != null ? await userService.GetUserByIdAsync(_post.UserId) : null;
+        _canManagePost = _user != null && _post != null &&
+            await authorizationService.IsAuthorizedToManagePost(_user, _post.Id);
         _hasToc = _post != null
             && markdownService.GetHeadingsFromMarkdown(_post.Content).Any();
+
     }
 
     private async void OnLocalStorageChanged(object? sender, ChangedEventArgs e)
