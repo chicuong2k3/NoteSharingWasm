@@ -23,14 +23,21 @@ namespace SharingNote.Wasm.ApiServices
 
         public async Task<GetUserResponse?> GetUserInfoAsync()
         {
-            var response = await _httpClient.GetAsync("/users/profile");
+            try
+            {
+                var response = await _httpClient.GetAsync("/users/profile");
 
-            if (!response.IsSuccessStatusCode)
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+
+                return await response.Content.ReadFromJsonAsync<GetUserResponse>();
+            }
+            catch (Exception)
             {
                 return null;
             }
-
-            return await response.Content.ReadFromJsonAsync<GetUserResponse>();
         }
 
         public async Task<GetUserResponse?> GetUserByIdAsync(Guid id)

@@ -6,11 +6,12 @@
 @inject IConfiguration configuration
 @inject IDialogService dialogService
 @inject IAuthService authService
+@inject ILocalStorageService localStorage
 
 <PageTitle>Đăng nhập</PageTitle>
 
 <MudGrid Justify="Justify.Center" Class="mt-5">
-    <MudItem xs="10" md="7">
+    <MudItem xs="12" md="7">
         <MudPaper Elevation="0" Class="pa-8" Style="width: 100%;" Outlined="true">
             <MudForm Spacing="3" @ref="_form" Model="@_model" @bind-IsValid="_isFormValid">
                 <MudText Typo="Typo.h1" Align="Align.Center">ĐĂNG NHẬP</MudText>
@@ -33,6 +34,11 @@
                               Margin="Margin.Dense" Variant="Variant.Outlined" />
 
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudCheckBox CheckedIcon="@Icons.Material.Filled.CheckCircle"
+                                 UncheckedIcon="@Icons.Material.Filled.CheckCircleOutline"
+                                 For="@(() => _model.RememberMe)" Dense="true"
+                                 Color="Color.Primary" @bind-Value="@_model.RememberMe" />
+
                     <MudLink Typo="Typo.body2" OnClick="OpenForgotPasswordDialog" Class="text-decoration-none">Quên mật khẩu?</MudLink>
                 </MudStack>
 
@@ -78,6 +84,22 @@
     bool _isSubmitting = false;
     string ErrorMessage = string.Empty;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var email = await localStorage.GetItemAsync<string>("email");
+        var password = await localStorage.GetItemAsync<string>("password");
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            _model.Email = email;
+        }
+
+        if (!string.IsNullOrEmpty(password))
+        {
+            _model.Password = password;
+        }
+    }
+
     private async Task Login()
     {
         await _form!.Validate();
@@ -92,7 +114,19 @@
             if (response.IsSuccessStatusCode)
             {
                 snackbar.Add("Đăng nhập thành công", Severity.Success);
-                navigationManager.NavigateTo("/", true);
+
+                if (_model.RememberMe)
+                {
+                    await localStorage.SetItemAsync("email", _model.Email);
+                    await localStorage.SetItemAsync("password", _model.Password);
+                }
+                else
+                {
+                    await localStorage.RemoveItemAsync("email");
+                    await localStorage.RemoveItemAsync("password");
+                }
+
+                navigationManager.NavigateTo("/");
             }
             else
             {
@@ -142,6 +176,8 @@
         [Label("Mật khẩu")]
         [Required(ErrorMessage = "Mật khẩu không được để trống")]
         public string Password { get; set; } = string.Empty;
+        [Label("Nhớ thông tin đăng nhập")]
+        public bool RememberMe { get; set; } = false;
     }
 
 }

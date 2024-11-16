@@ -1,4 +1,6 @@
 ﻿@page "/post/create"
+@using SharedKernel.Authentication.Extensions
+@using System.Security.Claims
 
 
 @inject ISnackbar snackbar
@@ -6,6 +8,7 @@
 @inject IJSRuntime JSRuntime
 @inject ITagService tagService
 @inject IPostService postService
+@inject ILocalStorageService localStorage
 
 
 <AuthorizeView Context="UserContext">
@@ -48,9 +51,11 @@
                         <MudInputLabel Style="font-weight: 600">Nội dung</MudInputLabel>
 
                         <MarkdownEditor @bind-Value="@Model.Content"
-                                        AllowResize="false" AutoSaveEnabled="true"
+                                        AllowResize="false" SpellChecker="true" TabSize="4"
+                                        AutoSaveEnabled="true" AutoSaveDelay="1000"
+                                        AutoSaveId="@UserContext.User.GetUserId().ToString()"
                                         LineWrapping="true" LineNumbers="true" ToolbarTips="true"
-                                        MinHeight="500px" MaxHeight="500px"
+                                        MinHeight="400px" MaxHeight="400px"
                                         UploadImage="true"
                                         HideIcons="@(["fullscreen"])" />
 
@@ -182,9 +187,27 @@
 
     bool _isSubmitting = false;
 
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    ClaimsPrincipal? _user;
+
     protected override async Task OnInitializedAsync()
     {
+        _user = (await AuthenticationStateTask).User;
+
         _tags = (await tagService.GetTagsAsync()).OrderBy(tag => tag.Name).ToList();
+
+        var keys = await localStorage.KeysAsync();
+        var key = keys.FirstOrDefault(x => x.Equals($"smde_{_user.GetUserId()}")) ?? string.Empty;
+        if (!string.IsNullOrEmpty(key))
+        {
+            var localStorageContent = await localStorage.GetItemAsync<string>(key);
+            if (!string.IsNullOrEmpty(localStorageContent))
+            {
+                Model.Content = localStorageContent;
+            }
+        }
     }
 
     #region Manual create post
@@ -213,6 +236,13 @@
         if (createdPost != null)
         {
             snackbar.Add("Tạo bài viết thành công.", Severity.Success);
+
+            var keys = await localStorage.KeysAsync();
+            var key = keys.FirstOrDefault(x => x.Equals($"smde_{_user!.GetUserId()}")) ?? string.Empty;
+            if (!string.IsNullOrEmpty(key))
+            {
+                await localStorage.RemoveItemAsync(key);
+            }
 
             navigationManager.NavigateTo($"/post/{createdPost.PostId}");
         }

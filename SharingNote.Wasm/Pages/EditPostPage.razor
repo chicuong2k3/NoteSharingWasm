@@ -8,6 +8,7 @@
 @inject IPostService postService
 @inject ITagService tagService
 @inject AuthorizationService authorizationService
+@inject ILocalStorageService localStorage
 
 @if (Model == null)
 {
@@ -31,6 +32,7 @@ else if (_canManagePost)
                        CheckedIcon="@Icons.Material.Filled.Star"
                        UncheckedIcon="@Icons.Material.Filled.StarBorder"
                        Variant="Variant.Outlined" Margin="Margin.Dense"
+                       SelectedValues="@Model.TagIds"
                        MultiSelectionTextFunc="@(new Func<List<string>, string>(GetMultiSelectionText))"
                        MultiSelection="true" SelectedValuesChanged="OnSelectedTagsChanged">
                 @foreach (var tag in _tags)
@@ -47,9 +49,11 @@ else if (_canManagePost)
             <MudInputLabel Style="font-weight: 600">Nội dung</MudInputLabel>
 
             <MarkdownEditor @bind-Value="@Model.Content"
-                            AllowResize="false" AutoSaveEnabled="true"
+                            AllowResize="false" SpellChecker="true" TabSize="4"
+                            AutoSaveEnabled="true" AutoSaveDelay="1000"
+                            AutoSaveId="@Id.ToString()"
                             LineWrapping="true" LineNumbers="true" ToolbarTips="true"
-                            MinHeight="500px" MaxHeight="500px"
+                            MinHeight="400px" MaxHeight="400px"
                             UploadImage="true"
                             HideIcons="@(["fullscreen"])" />
 
@@ -117,6 +121,17 @@ else
                 };
 
             _authorId = result.UserId;
+
+            var keys = await localStorage.KeysAsync();
+            var key = keys.FirstOrDefault(x => x.Equals($"smde_{Id}")) ?? string.Empty;
+            if (!string.IsNullOrEmpty(key))
+            {
+                var localStorageContent = await localStorage.GetItemAsync<string>(key);
+                if (!string.IsNullOrEmpty(localStorageContent))
+                {
+                    Model.Content = localStorageContent;
+                }
+            }
         }
 
         _tags = (await tagService.GetTagsAsync()).OrderBy(tag => tag.Name).ToList();
@@ -162,6 +177,16 @@ else
         if (result.IsSuccessStatusCode)
         {
             snackbar.Add("Sửa bài viết thành công.", Severity.Success);
+            await localStorage.RemoveItemAsync($"post-{Id}");
+
+
+            var keys = await localStorage.KeysAsync();
+            var key = keys.FirstOrDefault(x => x.Equals($"smde_{Id}")) ?? string.Empty;
+            if (!string.IsNullOrEmpty(key))
+            {
+                await localStorage.RemoveItemAsync(key);
+            }
+
             navigationManager.NavigateTo($"/post/{Id}");
         }
 

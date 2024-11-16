@@ -159,7 +159,7 @@
         try
         {
             await authService.LogoutAsync();
-            navigationManager.NavigateTo("/login", true);
+            navigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {

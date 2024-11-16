@@ -1,9 +1,13 @@
 ﻿@inherits LayoutComponentBase
+
 @inject IDialogService dialogService
 @inject NavigationManager navigationManager
 @inject ISnackbar snackbar
 @inject IJSRuntime JSRuntime
 @inject ILocalStorageService localStorage
+
+
+
 
 <MudThemeProvider IsDarkMode="@_isDarkMode" Theme="MyCustomTheme" />
 
@@ -57,7 +61,7 @@
     <MudMainContent>
         <AppBar ToggleSidebar="HandleToggleSidebar"
                 IsDarkMode="@_isDarkMode"
-                IsDarkModeChanged="OnDarkModeChanged" />
+                IsDarkModeChanged="@OnDarkModeChanged" />
 
         <MudContainer Class="mb-3">
             @Body
@@ -71,10 +75,34 @@
 @code {
     private bool _open = true;
     private bool _isDarkMode = false;
+    private Timer? _timer;
+
+    override protected void OnInitialized()
+    {
+        StartClearLocalStorageTimer();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
         _isDarkMode = await localStorage.GetItemAsync<bool>("isDarkMode");
+    }
+
+    private void StartClearLocalStorageTimer()
+    {
+        _timer = new Timer(async _ => await ClearLocalStorage(), null, TimeSpan.FromDays(1), Timeout.InfiniteTimeSpan);
+    }
+
+    private async Task ClearLocalStorage()
+    {
+        var keys = await localStorage.KeysAsync();
+        foreach (var key in keys)
+        {
+            if (key.StartsWith("post-"))
+            {
+                await localStorage.RemoveItemAsync(key);
+            }
+        }
+
     }
 
     private async Task OnDarkModeChanged(bool isDarkMode)
@@ -162,15 +190,18 @@
                     FontSize = "20px",
                     FontWeight = 600
                 },
-                Input = new Input()
+                Body1 = new Body1()
+                {
+                    FontSize = "16px"
+                },
+                Body2 = new Body2()
                 {
                     FontSize = "14px"
                 },
-                Body1 = new Body1()
+                Caption = new Caption()
                 {
-                    FontSize = "20px"
-                },
-            },
-
+                    FontSize = "12px"
+                }
+            }
         };
 }

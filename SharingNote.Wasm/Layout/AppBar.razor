@@ -1,6 +1,7 @@
 ﻿@inject NavigationManager navigationManager
+@inject ILocalStorageService localStorage
 
-<MudAppBar Elevation="0" Color="Color.Transparent">
+<MudAppBar Elevation="0" Color="Color.Transparent" Fixed="false">
     <MudHidden Breakpoint="Breakpoint.MdAndUp">
         <MudIconButton OnClick="HandleOnClick" Size="Size.Large"
                        Icon="@Icons.Material.Filled.Menu"
@@ -10,25 +11,44 @@
 
     <MudSpacer />
 
-    <MudToggleIconButton Icon="@Icons.Material.Filled.LightMode"
-                         Size="Size.Large"
-                         ToggledSize="Size.Large"
-                         Color="@Color.Warning"
-                         ToggledIcon="@Icons.Material.Filled.DarkMode"
-                         ToggledColor="@Color.Error"
-                         Toggled="@IsDarkMode"
-                         ToggledChanged="ToggleDarkMode"
-                         Class="d-md-none" />
+    <MudStack Row="true" AlignItems="AlignItems.Center">
+        <MudTooltip Text="Xoá cache" Color="Color.Info">
+            <MudStack>
+                <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep"
+                               Size="Size.Large" OnClick="ClearCache"
+                               Color="@Color.Secondary"
+                               Class="d-md-none" />
+                <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep"
+                               Size="Size.Small" OnClick="ClearCache"
+                               Color="@Color.Secondary"
+                               Class="d-none d-md-inline" />
+            </MudStack>
+        </MudTooltip>
 
-    <MudToggleIconButton Icon="@Icons.Material.Filled.LightMode"
-                         Size="Size.Small"
-                         ToggledSize="Size.Small"
-                         Color="@Color.Warning"
-                         ToggledIcon="@Icons.Material.Filled.DarkMode"
-                         ToggledColor="@Color.Error"
-                         Toggled="@IsDarkMode"
-                         ToggledChanged="ToggleDarkMode"
-                         Class="d-none d-md-inline" />
+        <MudStack>
+            <MudTooltip Text="Dark Mode" Color="Color.Info">
+                <MudToggleIconButton Icon="@Icons.Material.Filled.LightMode"
+                                     Size="Size.Large"
+                                     ToggledSize="Size.Large"
+                                     Color="@Color.Warning"
+                                     ToggledIcon="@Icons.Material.Filled.DarkMode"
+                                     ToggledColor="@Color.Error"
+                                     Toggled="@IsDarkMode"
+                                     ToggledChanged="ToggleDarkMode"
+                                     Class="d-md-none" />
+
+                <MudToggleIconButton Icon="@Icons.Material.Filled.LightMode"
+                                     Size="Size.Small"
+                                     ToggledSize="Size.Small"
+                                     Color="@Color.Warning"
+                                     ToggledIcon="@Icons.Material.Filled.DarkMode"
+                                     ToggledColor="@Color.Error"
+                                     Toggled="@IsDarkMode"
+                                     ToggledChanged="ToggleDarkMode"
+                                     Class="d-none d-md-inline" />
+            </MudTooltip>
+        </MudStack>
+    </MudStack>
 </MudAppBar>
 
 @code {
@@ -50,5 +70,11 @@
     private async Task ToggleDarkMode(bool value)
     {
         await IsDarkModeChanged.InvokeAsync(value);
+    }
+
+    private async Task ClearCache()
+    {
+        await localStorage.ClearAsync();
+        navigationManager.NavigateTo(navigationManager.Uri, true);
     }
 }
