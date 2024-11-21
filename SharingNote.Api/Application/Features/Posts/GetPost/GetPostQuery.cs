@@ -2,4 +2,4 @@
 
 public sealed record GetPostQuery(
     Guid Id
-) : IQuery<GetPostResponse>;
+) : IQuery<PostDto>;

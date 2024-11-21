@@ -91,18 +91,23 @@ else
                 @if (_isDarkMode)
                 {
                     <MudPaper Class="pa-4" Outlined="true">
-                        <MudMarkdown Value="@_post.Content"
+                        <MudMarkdown Value="@(UpdateHeadingIds(_post.Content))"
                                      CodeBlockTheme="CodeBlockTheme.Vs2015" />
                     </MudPaper>
                 }
                 else
                 {
                     <MudPaper Class="pa-4" Outlined="true">
-                        <MudMarkdown Value="@_post.Content"
+                        <MudMarkdown Value="@(UpdateHeadingIds(_post.Content))"
                                      CodeBlockTheme="CodeBlockTheme.Vs" />
                     </MudPaper>
                 }
 
+            </MudStack>
+
+            <MudStack Class="my-2">
+                <Interaction UserId="@(_user?.GetUserId() ?? Guid.Empty)"
+                             Post="_post" />
             </MudStack>
 
             <MudStack Class="mt-4">
@@ -163,28 +168,28 @@ else
 
         localStorage.Changed += OnLocalStorageChanged;
 
-        var localStoragePost = await localStorage.GetItemAsync<PostResponse>($"post-{Id}");
+        // var localStoragePost = await localStorage.GetItemAsync<PostResponse>($"post-{Id}");
 
 
-        if (localStoragePost != null)
+        // if (localStoragePost != null)
+        // {
+        //     _post = localStoragePost;
+        // }
+        // else
+        // {
+        // Load current post
+        var result = await postService.GetPostAsync(Id);
+        if (result != null)
         {
-            _post = localStoragePost;
+            _post = result;
+
+            await localStorage.SetItemAsync($"post-{Id}", _post);
         }
         else
         {
-            // Load current post
-            var result = await postService.GetPostAsync(Id);
-            if (result != null)
-            {
-                _post = result;
-
-                await localStorage.SetItemAsync($"post-{Id}", _post);
-            }
-            else
-            {
-                _post = null;
-            }
+            _post = null;
         }
+        //}
 
 
     }
@@ -223,17 +228,27 @@ else
     }
 
 
-    private string GenerateAnchorName(string headingText)
-    {
-        var anchor = headingText.ToLower().Replace(" ", "-");
-        anchor = Regex.Replace(anchor, @"-+", "-");
-        anchor = Regex.Replace(anchor, @"[^a-z0-9\-]", "");
-
-        return $"{anchor}";
-    }
-
     public void Dispose()
     {
         localStorage.Changed -= OnLocalStorageChanged;
     }
+
+    public string UpdateHeadingIds(string markdownContent)
+    {
+        // Cập nhật các thẻ H1, H2,... trong markdown để thêm id
+        var headingPattern = new Regex(@"^(#{1,6})\s*(.*)", RegexOptions.Multiline);
+
+        return headingPattern.Replace(markdownContent, match =>
+        {
+            var headingLevel = match.Groups[1].Value.Length;  // Độ sâu của thẻ H1, H2,...
+            var headingText = match.Groups[2].Value.Trim();
+
+            // Tạo id cho thẻ header từ nội dung của nó
+            var anchor = markdownService.GenerateAnchorName(headingText);
+
+            // Trả về thẻ heading với id đã được thêm vào
+            return $"{new string('#', headingLevel)} <a id=\"{anchor}\"></a>{headingText}";
+        });
+    }
+
 }

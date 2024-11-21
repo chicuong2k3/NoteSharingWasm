@@ -6,10 +6,11 @@
 @inject IUserService userSerivce
 @inject IAuthService authService
 
+<MudText Align="Align.Center" Typo="Typo.h3">TÀI KHOẢN</MudText>
+
 <AuthorizeView Context="UserContext">
     <Authorized>
         <MudPaper Class="px-4 py-8 rounded-lg" Outlined="true">
-            <MudText Align="Align.Center" Typo="Typo.h3">TÀI KHOẢN</MudText>
 
             <MudGrid>
                 <MudItem md="6">
@@ -60,7 +61,7 @@
                         }
                         else
                         {
-                            <MudButton Class="rounded-pill" Color="Color.Info" DropShadow="false"
+                            <MudButton Class="rounded-pill" Color="Color.Error" DropShadow="false"
                                        Ripple="false"
                                        OnClick="OnUpdateInfo"
                                        Variant="Variant.Filled" Size="Size.Small">Cập nhật thông tin</MudButton>
@@ -72,7 +73,7 @@
                                    Ripple="false" OnClick="@(() => navigationManager.NavigateTo($"/post/search?userId={UserContext.User.GetUserId()}"))"
                                    Variant="Variant.Filled" Size="Size.Small">Xem các bài viết của bạn</MudButton>
 
-                        <MudButton Class="rounded-pill" Color="Color.Default" DropShadow="false"
+                        <MudButton Class="rounded-pill" Color="Color.Dark" DropShadow="false"
                                    Ripple="false" OnClick="LogoutAsync"
                                    Variant="Variant.Filled" Size="Size.Small">Đăng xuất</MudButton>
                     </MudStack>
@@ -102,7 +103,7 @@
         }
         else
         {
-            navigationManager.NavigateTo("/login", true);
+            navigationManager.NavigateTo("/login?returnUrl=/account", true);
         }
     }
 

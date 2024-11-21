@@ -1,0 +1,41 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small">
+    <MudText Typo="Typo.subtitle2">Đang truy cập: @_viewCount</MudText>
+</MudChip>
+
+@code {
+    HubConnection? _hubConnection;
+    int _viewCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Tạo kết nối SignalR đến Hub trên server
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7235/hubs/view")
+            .Build();
+
+        // Lắng nghe sự kiện từ server
+        _hubConnection.On<int>("viewCountUpdate", (value) =>
+        {
+            _viewCount = value;
+            InvokeAsync(StateHasChanged);
+        });
+
+
+
+        // Kết nối đến SignalR Hub
+        await _hubConnection.StartAsync();
+
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection != null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

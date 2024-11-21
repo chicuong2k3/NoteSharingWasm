@@ -3,9 +3,9 @@ using SharingNote.Api.Domain;
 
 namespace SharingNote.Api.Infrastructure.Database.EFCore
 {
-    public sealed class TagConfiguration : IEntityTypeConfiguration<Tag>
+    public sealed class TagConfiguration : IEntityTypeConfiguration<Domain.Tag>
     {
-        public void Configure(EntityTypeBuilder<Tag> builder)
+        public void Configure(EntityTypeBuilder<Domain.Tag> builder)
         {
             builder.HasKey(x => x.Id);
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SharingNote.Api.Domain;
 
 namespace SharingNote.Api.Infrastructure.Database.EFCore
@@ -29,6 +30,11 @@ namespace SharingNote.Api.Infrastructure.Database.EFCore
             builder.HasOne<AppUser>()
                 .WithMany()
                 .HasForeignKey(x => x.UserId);
+
+            builder.HasMany(x => x.Interactions)
+                .WithOne()
+            .HasForeignKey(x => x.PostId);
+
         }
     }
 }

@@ -5,6 +5,6 @@ public interface ICommand : IRequest<Result>, ICommandBase
 {
 }
 
-public interface ICommand<TResponse> : IRequest<Result<TResponse>>, ICommandBase
+public interface ICommand<TResponse> : IRequest<Ardalis.Result.Result<TResponse>>, ICommandBase
 {
 }

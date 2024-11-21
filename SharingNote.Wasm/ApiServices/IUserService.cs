@@ -6,6 +6,9 @@ public interface IUserService
     Task<GetUserResponse?> GetUserInfoAsync();
     Task<HttpResponseMessage> UpdateUserAsync(string displayName, string avatar);
     Task<GetUserResponse?> GetUserByIdAsync(Guid id);
+    Task<bool> CheckUserExistAsync(string email);
+    Task<HttpResponseMessage> SendResetPasswordOtp(string email);
+    Task<HttpResponseMessage> ResetPassword(string email, string otp, string newPassword);
 }
 
 public sealed record GetUserResponse(

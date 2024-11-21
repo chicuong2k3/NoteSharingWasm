@@ -16,6 +16,8 @@ interface IPostService : IReadPostService
         string? orderBy,
         List<Guid>? tagIds,
         Guid? userId);
+
+    Task<HttpResponseMessage> InteractPost(InteractionRequest request);
 }
 
 record GetPostsResponse(
@@ -39,6 +41,7 @@ public record PostDto(
     DateTime PublicationDate,
     Guid UserId
 );
+
 
 record CreatePostResponse(
     Guid PostId,
@@ -72,3 +75,5 @@ class UpdatePostRequest
 
     public List<Guid> TagIds { get; set; } = [];
 }
+
+public record InteractionRequest(Guid PostId, Guid UserId, string InteractionType);

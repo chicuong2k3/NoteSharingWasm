@@ -17,7 +17,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Logging.SetMinimumLevel(LogLevel.None);
+builder.Logging.SetMinimumLevel(LogLevel.Trace);
 
 builder.Services.AddMudServices(config =>
 {
@@ -31,9 +31,21 @@ builder.Services.AddMudServices(config =>
 
 builder.Services.AddMudMarkdownServices();
 
-builder.Services.AddScoped<MarkdownService>();
+builder.Services.AddSingleton<MarkdownService>();
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiAddress"]!) });
+
+builder.Services.AddScoped(sp =>
+{
+    var client = new HttpClient
+    {
+        BaseAddress = new Uri(builder.Configuration["ApiAddress"]!)
+    };
+    return client;
+});
+
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+
 
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -74,6 +86,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 
 await builder.Build().RunAsync();

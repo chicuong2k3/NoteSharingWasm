@@ -4,4 +4,4 @@ public record CreatePostCommand(
     string Title,
     string Content,
     List<Guid> TagIds,
-    Guid UserId) : ICommand<CreatePostResponse>;
+    Guid UserId) : ICommand<PostDto>;

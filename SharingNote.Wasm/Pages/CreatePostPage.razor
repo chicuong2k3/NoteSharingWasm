@@ -1,4 +1,7 @@
 ﻿@page "/post/create"
+
+
+
 @using SharedKernel.Authentication.Extensions
 @using System.Security.Claims
 
@@ -52,12 +55,14 @@
 
                         <MarkdownEditor @bind-Value="@Model.Content"
                                         AllowResize="false" SpellChecker="true" TabSize="4"
-                                        AutoSaveEnabled="true" AutoSaveDelay="1000"
+                                        AutoSaveEnabled="true" AutoSaveDelay="200"
                                         AutoSaveId="@UserContext.User.GetUserId().ToString()"
                                         LineWrapping="true" LineNumbers="true" ToolbarTips="true"
-                                        MinHeight="400px" MaxHeight="400px"
-                                        UploadImage="true"
+                                        MinHeight="350px" MaxHeight="350px"
+                                        UploadImage="true" ImageAccept=".jpg,.jpeg,.png,.gif,.bmp"
+                                        AutoDownloadFontAwesome="true" LinesStatusText="Số dòng"
                                         HideIcons="@(["fullscreen"])" />
+
 
                         <ValidationMessage class="mud-input-helper-text mud-input-error" style="font-size: 0.75rem;" For="() => Model.Content" />
                     </MudStack>
@@ -194,6 +199,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+
         _user = (await AuthenticationStateTask).User;
 
         _tags = (await tagService.GetTagsAsync()).OrderBy(tag => tag.Name).ToList();
@@ -209,6 +215,7 @@
             }
         }
     }
+
 
     #region Manual create post
     private string GetMultiSelectionText(List<string> selectedValues)

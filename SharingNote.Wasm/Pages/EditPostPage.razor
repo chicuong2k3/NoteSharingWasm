@@ -50,11 +50,12 @@ else if (_canManagePost)
 
             <MarkdownEditor @bind-Value="@Model.Content"
                             AllowResize="false" SpellChecker="true" TabSize="4"
-                            AutoSaveEnabled="true" AutoSaveDelay="1000"
+                            AutoSaveEnabled="true" AutoSaveDelay="200"
                             AutoSaveId="@Id.ToString()"
                             LineWrapping="true" LineNumbers="true" ToolbarTips="true"
-                            MinHeight="400px" MaxHeight="400px"
-                            UploadImage="true"
+                            MinHeight="350px" MaxHeight="350px"
+                            UploadImage="true" ImageAccept=".jpg,.jpeg,.png,.gif,.bmp"
+                            AutoDownloadFontAwesome="true"
                             HideIcons="@(["fullscreen"])" />
 
             <ValidationMessage class="mud-input-helper-text mud-input-error" style="font-size: 0.75rem;" For="() => Model.Content" />
@@ -68,6 +69,11 @@ else if (_canManagePost)
             <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success" FullWidth="true"
                        Class="mt-3 rounded-pill" DropShadow="false">
                 Lưu bài viết
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Default" FullWidth="true"
+                       Class="mt-3 rounded-pill" Ripple="false" DropShadow="false"
+                       OnClick="@(() => navigationManager.NavigateTo($"/post/{Id}"))">
+                Trở lại
             </MudButton>
         }
         else

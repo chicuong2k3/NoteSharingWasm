@@ -23,7 +23,12 @@ namespace SharingNote.Api.ContractsImplementation
                     result.Value.Content,
                     result.Value.Tags.Select(t => new TagResponse(t.Id, t.Name, t.UserId)).ToList(),
                     result.Value.PublicationDate,
-                    result.Value.UserId
+                    result.Value.UserId,
+                    result.Value.Interactions.Select(i => new PostInteractionDto(
+                        i.PostId,
+                        i.UserId,
+                        i.InteractionType,
+                        i.InteractedAt)).ToList()
                 );
             }
 

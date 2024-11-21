@@ -1,5 +1,6 @@
 ﻿
 using SharedKernel.Contracts;
+using System.Net.Http;
 using System.Net.Http.Json;
 
 namespace SharingNote.Wasm.ApiServices
@@ -81,6 +82,10 @@ namespace SharingNote.Wasm.ApiServices
             return await response.Content.ReadFromJsonAsync<GetPostsResponse>();
         }
 
+        public Task<HttpResponseMessage> InteractPost(InteractionRequest request)
+        {
+            return _httpClient.PostAsJsonAsync($"/posts/{request.PostId}/interact", request);
+        }
 
         public async Task<HttpResponseMessage> UpdatePostAsync(Guid id, UpdatePostRequest request)
         {

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SharingNote.Api.Domain
 {
@@ -15,6 +16,12 @@ namespace SharingNote.Api.Domain
 
         public Guid UserId { get; private set; }
 
+        private List<PostInteraction> _interactions = [];
+        public IReadOnlyCollection<PostInteraction> Interactions => _interactions;
+
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = [];
         private Post()
         {
 
@@ -40,5 +47,6 @@ namespace SharingNote.Api.Domain
             _tags.Clear();
             _tags.AddRange(tags);
         }
+
     }
 }

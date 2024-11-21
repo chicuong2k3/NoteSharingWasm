@@ -62,5 +62,36 @@ namespace SharingNote.Wasm.ApiServices
 
             return response;
         }
+
+        public async Task<bool> CheckUserExistAsync(string email)
+        {
+            var response = await _httpClient.GetAsync($"/users/{email}/exists");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return false;
+            }
+
+            return await response.Content.ReadFromJsonAsync<bool>();
+        }
+
+        public async Task<HttpResponseMessage> SendResetPasswordOtp(string email)
+        {
+            return await _httpClient.PostAsJsonAsync("/otp/send", new
+            {
+                Email = email,
+                EmailSubject = "Quên mật khẩu"
+            });
+        }
+
+        public async Task<HttpResponseMessage> ResetPassword(string email, string otp, string newPassword)
+        {
+            return await _httpClient.PostAsJsonAsync("/users/reset-password", new
+            {
+                Email = email,
+                Otp = otp,
+                NewPassword = newPassword
+            });
+        }
     }
 }

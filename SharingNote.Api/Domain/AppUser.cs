@@ -4,6 +4,8 @@
     {
         public string DisplayName { get; private set; } = string.Empty;
         public string Avatar { get; private set; } = string.Empty;
+        public string? RefreshToken { get; set; }
+        public DateTime RefreshTokenExpiryDate { get; set; }
 
         private AppUser()
         {

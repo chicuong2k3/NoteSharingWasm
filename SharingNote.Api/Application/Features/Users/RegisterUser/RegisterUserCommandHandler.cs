@@ -1,12 +1,11 @@
-﻿using SharingNote.Api.Domain;
-
+﻿
 namespace SharingNote.Api.Application.Features.Users.RegisterUser
 {
     internal sealed class RegisterUserCommandHandler(
         UserManager<AppUser> userManager)
         : ICommandHandler<RegisterUserCommand, RegisterUserResponse>
     {
-        public async Task<Result<RegisterUserResponse>> Handle(RegisterUserCommand command, CancellationToken cancellationToken)
+        public async Task<Ardalis.Result.Result<RegisterUserResponse>> Handle(RegisterUserCommand command, CancellationToken cancellationToken)
         {
             try
             {

@@ -1,5 +1,4 @@
-﻿using SharingNote.Api.Application.Features.Tags.GetTags;
-using SharingNote.Api.Infrastructure.Database.EFCore;
+﻿using SharingNote.Api.Application.Features.Tags;
 using System.Linq.Dynamic.Core;
 
 namespace SharingNote.Api.Application.Features.Posts.SearchPosts;
@@ -9,7 +8,7 @@ internal sealed class SearchPostsQueryHandler(
     AppDbContext dbContext)
     : IQueryHandler<SearchPostsQuery, Ardalis.Result.PagedResult<IEnumerable<PostDto>>>
 {
-    public async Task<Result<Ardalis.Result.PagedResult<IEnumerable<PostDto>>>> Handle(SearchPostsQuery query, CancellationToken cancellationToken)
+    public async Task<Ardalis.Result.Result<Ardalis.Result.PagedResult<IEnumerable<PostDto>>>> Handle(SearchPostsQuery query, CancellationToken cancellationToken)
     {
         var posts = dbContext.Posts.AsQueryable();
 
@@ -74,7 +73,13 @@ internal sealed class SearchPostsQueryHandler(
                 x.ShortDescription,
                 x.Tags.Select(t => new TagDto(t.Id, t.Name, t.UserId)).ToList(),
                 x.PublicationDate,
-                x.UserId))
+                x.UserId,
+                x.Interactions.Select(i => new PostInteractionDto(
+                    i.Id,
+                    i.UserId,
+                    i.Type.ToString(),
+                    i.CreatedAt
+                )).ToList()))
 
         ));
     }

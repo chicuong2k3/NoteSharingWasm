@@ -11,6 +11,93 @@
 </MudAlert>
 
 <MudPaper Class="pa-4 mt-4" Elevation="0" Outlined="true">
+    <MudText Typo="Typo.h6">Các chức năng chính</MudText>
+    <MudStack Class="ms-3">
+        <MudList T="string" Dense="true" ReadOnly="true">
+            <MudListItem Dense="true" Ripple="false">
+                Password Login và Social Login sử dụng JWT.
+            </MudListItem>
+            <MudListItem Dense="true" Ripple="false">
+                Phân quyền người dùng với ABAC.
+                <MudList Dense="true" ReadOnly="true">
+                    <MudListItem Dense="true" Ripple="false">
+                        Người dùng đã đăng nhập mới được tạo bài viết, bình luận.
+                    </MudListItem>
+                    <MudListItem Dense="true" Ripple="false">
+                        Người dùng chỉ có thể chỉnh sửa, xóa bài viết của bản thân.
+                    </MudListItem>
+                </MudList>
+            </MudListItem>
+            <MudListItem Dense="true" Ripple="false">
+                Quản lý bài viết
+                <MudList T="string" Dense="true" ReadOnly="true">
+                    <MudListItem Dense="true" Ripple="false">
+                        Tạo bài viết mới, chỉnh sửa và xóa bài viết của bản thân.
+                    </MudListItem>
+                    <MudListItem Dense="true" Ripple="false">
+                        Tạo nhiều bài viết cùng một lúc bằng cách tải lên các file markdown.
+                    </MudListItem>
+                    <MudListItem Dense="true" Ripple="false">
+                        Chỉnh sửa bài viết mà không cần kết nối internet.
+                    </MudListItem>
+                    <MudListItem Dense="true" Ripple="false">
+                        Tìm kiếm, phân trang, lọc và sắp xếp bài viết.
+                    </MudListItem>
+                    <MudListItem Dense="true" Ripple="false">
+                        Gửi thông báo khi có bài viết mới cho người theo dõi với OneSignal.
+                    </MudListItem>
+                </MudList>
+            </MudListItem>
+
+            <MudListItem Dense="true" Ripple="false">
+                Quản lý bình luận
+                <MudList T="string" Dense="true" ReadOnly="true">
+                    <MudListItem Dense="true" Ripple="false">
+                        Tạo, chỉnh sửa, xóa bình luận.
+                    </MudListItem>
+                    <MudListItem Dense="true" Ripple="false">
+                        Tích hợp Akismet để chống spam bình luận.
+                    </MudListItem>
+                </MudList>
+            </MudListItem>
+
+
+            <MudListItem Dense="true" Ripple="false">
+                Quản lý tài khoản cá nhân (avatar, thông tin cá nhân, đổi mật khẩu).
+            </MudListItem>
+            <MudListItem>
+                Chức năng thống kê
+                <MudList T="string" Dense="true" ReadOnly="true">
+                    <MudListItem Dense="true" Ripple="false">
+                        Thống kê tổng số người dùng, số lượng người dùng sử dụng mỗi ngày/tuần.
+                    </MudListItem>
+                    <MudListItem Dense="true" Ripple="false">
+                        Thống kê tổng số bài viết, số bài viết được tạo mỗi ngày/tuần, bài viết có số lượt xem nhiều nhất.
+                    </MudListItem>
+                </MudList>
+            </MudListItem>
+        </MudList>
+    </MudStack>
+</MudPaper>
+
+<MudPaper Class="pa-4 mt-4" Elevation="0" Outlined="true">
+    <MudText Typo="Typo.h6">Kiến thức áp dụng</MudText>
+    <MudStack Class="ms-3">
+        <MudList T="string" Dense="true" ReadOnly="true">
+            <MudListItem Dense="true" Ripple="false">
+                REST API, GraphQL, Webhook
+            </MudListItem>
+            <MudListItem Dense="true" Ripple="false">
+                Page-Based Pagination, Cursor-Based Pagination
+            </MudListItem>
+            <MudListItem Dense="true" Ripple="false">
+                Architecture: Clean Architecture, CQRS
+            </MudListItem>
+        </MudList>
+    </MudStack>
+</MudPaper>
+
+<MudPaper Class="pa-4 mt-4" Elevation="0" Outlined="true">
     <MudText Typo="Typo.subtitle2">Lỗi chưa fix</MudText>
     <MudStack Class="ms-3">
         <MudText Typo="Typo.caption" Color="Color.Error">

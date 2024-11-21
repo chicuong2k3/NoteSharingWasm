@@ -37,7 +37,10 @@
         <NotAuthorized>
             <MudAlert Severity="Severity.Warning" NoIcon="true" Style="width: 100%"
                       ContentAlignment="HorizontalAlignment.Center">
-                <MudText Align="Align.Center">Đăng nhập để bình luận</MudText>
+                <MudText Align="Align.Center">
+                    <MudLink Href="@($"/login?ReturnUrl=/post/{PostId}")">Đăng nhập</MudLink>
+                    để bình luận
+                </MudText>
             </MudAlert>
         </NotAuthorized>
     </AuthorizeView>

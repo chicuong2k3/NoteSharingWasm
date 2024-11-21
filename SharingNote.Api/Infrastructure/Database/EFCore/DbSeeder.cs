@@ -25,11 +25,11 @@ namespace SharingNote.Api.Infrastructure.Database.EFCore
                     {
                         if (!dbContext.Tags.Any())
                         {
-                            var tag1 = new Tag(".NET", result.Value.UserId);
-                            var tag2 = new Tag("Python", result.Value.UserId);
-                            var tag3 = new Tag("Java", result.Value.UserId);
+                            var tag1 = new Domain.Tag(".NET", result.Value.UserId);
+                            var tag2 = new Domain.Tag("Python", result.Value.UserId);
+                            var tag3 = new Domain.Tag("Java", result.Value.UserId);
 
-                            var tags = new List<Tag>()
+                            var tags = new List<Domain.Tag>()
                             {
                                 tag2 , tag1, tag3
                             };
@@ -46,7 +46,7 @@ namespace SharingNote.Api.Infrastructure.Database.EFCore
                             for (int i = 0; i < 20; i++)
                             {
                                 var random = new Random();
-                                var randomTags = new List<Tag>();
+                                var randomTags = new List<Domain.Tag>();
                                 var randomCount = random.Next(4);
 
                                 for (int j = 0; j < randomCount; j++)

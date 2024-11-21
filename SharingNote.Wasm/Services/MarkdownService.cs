@@ -32,13 +32,18 @@ public class MarkdownService
         }
         return text.ToString().Trim();
     }
-    private string GenerateAnchorName(string headingText)
+    public string GenerateAnchorName(string headingText)
     {
-        var anchor = headingText.ToLower().Replace(" ", "-");
-        anchor = Regex.Replace(anchor, @"-+", "-");
-        anchor = Regex.Replace(anchor, @"[^a-z0-9\-]", "");
+        // Xử lý văn bản để loại bỏ các ký tự không hợp lệ
+        var anchor = headingText.ToLower();
 
-        return anchor;
+        // Thay thế khoảng trắng bằng dấu gạch ngang và loại bỏ các ký tự không hợp lệ
+        anchor = Regex.Replace(anchor, @"[^a-z0-9]", "-");
+
+        // Đảm bảo không có dấu gạch ngang thừa
+        anchor = Regex.Replace(anchor, @"-+", "-");
+
+        return Uri.EscapeDataString(anchor); // Mã hóa anchor cho URL
     }
     public List<Heading> GetHeadingsFromMarkdown(string markdown)
     {

@@ -2,4 +2,4 @@
 
 public record CreateTagCommand(
     string Name,
-    Guid UserId) : ICommand<CreateTagResponse>;
+    Guid UserId) : ICommand<TagDto>;

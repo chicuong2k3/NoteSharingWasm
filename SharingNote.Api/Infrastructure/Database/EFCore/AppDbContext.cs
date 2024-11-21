@@ -14,7 +14,8 @@ namespace SharingNote.Api.Infrastructure.Database.EFCore
 
         public DbSet<Post> Posts { get; set; }
         public DbSet<Comment> Comments { get; set; }
-        public DbSet<Tag> Tags { get; set; }
+        public DbSet<Domain.Tag> Tags { get; set; }
+        public DbSet<PostInteraction> PostInteractions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,6 +24,8 @@ namespace SharingNote.Api.Infrastructure.Database.EFCore
 
             modelBuilder.ApplyConfiguration(new CommentConfiguration());
             modelBuilder.ApplyConfiguration(new PostConfiguration());
+            modelBuilder.ApplyConfiguration(new TagConfiguration());
+            modelBuilder.ApplyConfiguration(new PostInteractionConfiguration());
 
             modelBuilder.Entity<AppUser>().ToTable("Users");
             modelBuilder.Entity<IdentityRole<Guid>>().ToTable("Roles");

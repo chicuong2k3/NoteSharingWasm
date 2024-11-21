@@ -10,7 +10,7 @@
     <MudButton DropShadow="false" Color="Color.Success" Ripple="false" Class="mb-3"
                OnClick="DownloadAll"
                Size="Size.Small">
-        Tải xuống tất cả bài viết
+        Tải xuống tất cả bài viết ở trang này
     </MudButton>
 }
 
@@ -24,7 +24,7 @@
     </MudItem>
     <MudItem xs="12" md="4">
         <MudSelect T="Guid" Label="Lọc theo tag"
-                   Variant="Variant.Outlined" Margin="Margin.Dense"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter"
                    MultiSelectionTextFunc="@(new Func<List<string>, string>(GetMultiSelectionText))"
                    MultiSelection="true" SelectedValuesChanged="OnSelectedTagsChanged">
             @foreach (var tag in _tags)
@@ -38,7 +38,7 @@
     </MudItem>
     <MudItem xs="7" md="2">
         <MudSelect T="string" Label="Sắp xếp theo" Variant="Variant.Outlined" Margin="Margin.Dense"
-                   Value="@_sortColumn"
+                   Value="@_sortColumn" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter"
                    ValueChanged="OnSortColumnChanged">
             <MudSelectItem T="string" Value="@("title")">Tiêu đề</MudSelectItem>
             <MudSelectItem T="string" Value="@("publicationDate")">Ngày đăng</MudSelectItem>
@@ -46,6 +46,7 @@
     </MudItem>
     <MudItem xs="5" md="2">
         <MudSelect T="string" Label="Thứ tự" Variant="Variant.Outlined" Margin="Margin.Dense"
+                   AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter"
                    ValueChanged="OnSortOrderChanged" Value="@_sortOrder">
             <MudSelectItem T="string" Value="@("asc")">Tăng dần</MudSelectItem>
             <MudSelectItem T="string" Value="@("desc")">Giảm dần</MudSelectItem>
@@ -236,19 +237,30 @@
 
     private async Task DownloadAll()
     {
-        foreach (var post in _posts)
+        var zipFileName = "AllPosts.zip";
+        using var memoryStream = new MemoryStream();
+        using (var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, true))
         {
-            var p = await postService.GetPostAsync(post.Id);
-            if (p != null)
+            var folder = archive.CreateEntry("Posts/");
+            foreach (var post in _posts)
             {
-                var markdownContent = p.Content;
+                var p = await postService.GetPostAsync(post.Id);
+                if (p != null)
+                {
+                    var markdownContent = p.Content;
+                    var fileName = $"Posts/{post.Title}.md";
+                    var fileContent = System.Text.Encoding.UTF8.GetBytes(markdownContent);
 
-                var fileName = $"{post.Title}.md";
-                var fileContent = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(markdownContent));
-
-                await JSRuntime.InvokeVoidAsync("downloadFile", fileName, fileContent);
+                    var zipEntry = archive.CreateEntry(fileName);
+                    using var zipStream = zipEntry.Open();
+                    zipStream.Write(fileContent, 0, fileContent.Length);
+                }
             }
         }
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        var base64Zip = Convert.ToBase64String(memoryStream.ToArray());
+        await JSRuntime.InvokeVoidAsync("downloadFile", zipFileName, base64Zip);
     }
 
 }

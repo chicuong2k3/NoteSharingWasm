@@ -36,10 +36,10 @@ namespace SharingNote.Api.Application.Behaviours
             _logger.LogInformation("{RequestName} has validation errors: {@ValidationErrors}.", typeof(TRequest).Name, validationFailures);
 
             if (typeof(TResponse).IsGenericType
-                && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
+                && typeof(TResponse).GetGenericTypeDefinition() == typeof(Ardalis.Result.Result<>))
             {
                 var resultType = typeof(TResponse).GetGenericArguments()[0];
-                var invalidResult = typeof(Result<>)
+                var invalidResult = typeof(Ardalis.Result.Result<>)
                     .MakeGenericType(resultType)
                     .GetMethod("Invalid", [typeof(ValidationError[])])
                     !.Invoke(null, [CreateValidationErrors(validationFailures)]);

@@ -5,7 +5,7 @@ internal sealed class GetUserQueryHandler(
     UserManager<AppUser> userManager)
     : IQueryHandler<GetUserQuery, GetUserResponse>
 {
-    public async Task<Result<GetUserResponse>> Handle(GetUserQuery query, CancellationToken cancellationToken)
+    public async Task<Ardalis.Result.Result<GetUserResponse>> Handle(GetUserQuery query, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByIdAsync(query.Id.ToString());
 

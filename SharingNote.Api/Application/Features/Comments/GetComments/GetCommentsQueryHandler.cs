@@ -7,7 +7,7 @@ internal sealed class GetCommentsQueryHandler(
     AppDbContext dbContext)
     : IQueryHandler<GetCommentsQuery, GetCommentsResponse>
 {
-    public async Task<Result<GetCommentsResponse>> Handle(GetCommentsQuery query, CancellationToken cancellationToken)
+    public async Task<Ardalis.Result.Result<GetCommentsResponse>> Handle(GetCommentsQuery query, CancellationToken cancellationToken)
     {
         var commentsQuery = dbContext.Comments
             .Where(x => x.PostId == query.PostId)

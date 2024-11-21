@@ -158,7 +158,11 @@
             path = path.Substring(0, index);
         }
 
-        navigationManager.NavigateTo($"{path}#{data.Value}");
+        // Mã hóa giá trị anchor trước khi thêm vào URL
+        var encodedAnchor = Uri.EscapeDataString(data.Value!);
+
+        // Điều hướng đến phần tử với anchor đã mã hóa
+        navigationManager.NavigateTo($"{path}#{encodedAnchor}");
     }
 
 }

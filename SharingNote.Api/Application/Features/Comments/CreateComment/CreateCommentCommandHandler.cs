@@ -1,9 +1,13 @@
-﻿namespace SharingNote.Api.Application.Features.Comments.CreateComment
+﻿using Akismet;
+
+namespace SharingNote.Api.Application.Features.Comments.CreateComment
 {
-    internal class CreateCommentCommandHandler(AppDbContext dbContext)
+    internal class CreateCommentCommandHandler(
+        AppDbContext dbContext,
+        AkismetClient akismetClient)
         : ICommandHandler<CreateCommentCommand, CreateCommentResponse>
     {
-        public async Task<Result<CreateCommentResponse>> Handle(CreateCommentCommand command, CancellationToken cancellationToken)
+        public async Task<Ardalis.Result.Result<CreateCommentResponse>> Handle(CreateCommentCommand command, CancellationToken cancellationToken)
         {
             var postExist = await dbContext.Posts.AnyAsync(x => x.Id == command.PostId);
 
@@ -21,6 +25,19 @@
                     return Result.NotFound($"Parent comment with id = {command.ParentId} was not found.");
                 }
             }
+
+
+            // check spam
+            var checkCommentResult = await akismetClient.CheckCommentAsync(new AkismetComment
+            {
+                CommentContent = command.Content,
+            });
+
+            if (checkCommentResult.IsSpam)
+            {
+                return Result.Error("Comment is spam.");
+            }
+
 
             var comment = new Comment(command.PostId, command.UserId, command.Content, command.ParentId);
 

@@ -4,7 +4,6 @@ using SharingNote.Wasm.ApiServices;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Security.Principal;
 
 namespace SharingNote.Wasm.Auth
 {
@@ -13,10 +12,8 @@ namespace SharingNote.Wasm.Auth
     /// </summary>
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {
-        private readonly HttpClient _httpClient;
         private readonly ILocalStorageService _localStorage;
-        private readonly IUserService _userService;
-
+        private readonly HttpClient _httpClient;
         public CustomAuthStateProvider(
             HttpClient httpClient,
             ILocalStorageService localStorage,
@@ -24,7 +21,6 @@ namespace SharingNote.Wasm.Auth
         {
             _httpClient = httpClient;
             _localStorage = localStorage;
-            _userService = userService;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -34,12 +30,6 @@ namespace SharingNote.Wasm.Auth
 
             if (!string.IsNullOrEmpty(accessToken))
             {
-                if (IsTokenExpired(accessToken))
-                {
-                    await _localStorage.RemoveItemAsync("accessToken");
-                    return new AuthenticationState(new ClaimsPrincipal());
-                }
-
                 claimsPrincipal = ParseClaimsFromAccessToken(accessToken);
                 _httpClient.DefaultRequestHeaders.Authorization
                     = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -47,12 +37,13 @@ namespace SharingNote.Wasm.Auth
 
             return new AuthenticationState(claimsPrincipal);
         }
-        public async Task NotifyUserLoginAsync(string accessToken)
+        public async Task NotifyUserLoginAsync(TokenResponse tokenResponse)
         {
-            await _localStorage.SetItemAsync("accessToken", accessToken);
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            await _localStorage.SetItemAsync("accessToken", tokenResponse.AccessToken);
+            await _localStorage.SetItemAsync("refreshToken", tokenResponse.RefreshToken);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
 
-            var claimsPrincipal = ParseClaimsFromAccessToken(accessToken);
+            var claimsPrincipal = ParseClaimsFromAccessToken(tokenResponse.AccessToken);
 
             var authState = Task.FromResult(new AuthenticationState(claimsPrincipal));
             NotifyAuthenticationStateChanged(authState);
@@ -61,6 +52,7 @@ namespace SharingNote.Wasm.Auth
         public async Task NotifyUserLogoutAsync()
         {
             await _localStorage.RemoveItemAsync("accessToken");
+            await _localStorage.RemoveItemAsync("refreshToken");
             _httpClient.DefaultRequestHeaders.Authorization = null;
 
             var authState = Task.FromResult(new AuthenticationState(new ClaimsPrincipal()));
@@ -88,12 +80,6 @@ namespace SharingNote.Wasm.Auth
             }
         }
 
-        private bool IsTokenExpired(string token)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadJwtToken(token);
-            return jwtToken.ValidTo < DateTime.UtcNow;
-        }
     }
 
 

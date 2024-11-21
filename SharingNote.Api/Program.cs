@@ -8,6 +8,14 @@ using SharedKernel.Authentication;
 using SharingNote.Api;
 using SharedKernel.Contracts;
 using SharingNote.Api.ContractsImplementation;
+using SharingNote.Api.GraphQL;
+using SharingNote.Api.Application.Features.Posts;
+using Akismet;
+using SharingNote.Api.Hubs;
+using SharingNote.Api.Infrastructure.Services;
+using SharingNote.Api.Application.Services;
+using StackExchange.Redis;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -128,6 +136,70 @@ builder.Services.AddCors(options =>
 });
 
 
+#region GraphQL
+
+builder.AddGraphQL()
+    .AddType<PostDto>()
+    .AddSharingNoteTypes()
+    .ModifyOptions(options =>
+    {
+        options.StripLeadingIFromInterface = true;
+        options.EnableOneOf = true;
+    })
+    .AddProjections()
+    .AddFiltering(configs =>
+    {
+        configs.AddDefaults();
+    })
+    .AddSorting()
+    .AddPagingArguments();
+
+
+#endregion
+
+#region third party services
+
+builder.Services.AddSingleton(
+        new AkismetClient(
+        builder.Configuration["Akismet:ApiKey"]!,
+        new Uri(builder.Configuration["ApiBaseUrl"]!),
+        "notesharing")
+    );
+
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Brevo"));
+builder.Services.AddSingleton<IEmailSendingService, BrevoSendingEmailService>();
+builder.Services.AddSingleton<IOtpService, OtpService>();
+
+#endregion
+
+#region Caching
+builder.Services.TryAddSingleton<ICacheService, CacheService>();
+
+try
+{
+    var cacheConnectionString = builder.Configuration.GetConnectionString("Redis")!;
+    var connectionMultiplexer = ConnectionMultiplexer.Connect(cacheConnectionString);
+    builder.Services.TryAddSingleton(connectionMultiplexer);
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.ConnectionMultiplexerFactory = ()
+        => Task.FromResult<IConnectionMultiplexer>(connectionMultiplexer);
+    });
+
+    Console.WriteLine("Connected to Redis");
+}
+catch
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+#endregion
+
+#region SignalR
+
+builder.Services.AddSignalR();
+
+#endregion
+
 
 var app = builder.Build();
 
@@ -149,6 +221,16 @@ app.UseSerilogRequestLogging();
 app.UseAuthentication();
 app.UseAuthorization();
 
+
+
 app.MapControllers();
 
+app.MapHub<ViewHub>("/hubs/view");
+app.MapHub<InteractionHub>("/hubs/interaction");
+
+app.MapGraphQL();
+app.RunWithGraphQLCommands(args);
+
+
 app.Run();
+

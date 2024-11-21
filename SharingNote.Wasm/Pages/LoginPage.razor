@@ -10,72 +10,85 @@
 
 <PageTitle>Đăng nhập</PageTitle>
 
-<MudGrid Justify="Justify.Center" Class="mt-5">
-    <MudItem xs="12" md="7">
-        <MudPaper Elevation="0" Class="pa-8" Style="width: 100%;" Outlined="true">
-            <MudForm Spacing="3" @ref="_form" Model="@_model" @bind-IsValid="_isFormValid">
-                <MudText Typo="Typo.h1" Align="Align.Center">ĐĂNG NHẬP</MudText>
+<AuthorizeView>
+    <Authorized>
+        <MudAlert Severity="Severity.Info" Elevation="0">
+            Bạn đã đăng nhập
+        </MudAlert>
+    </Authorized>
+    <NotAuthorized>
+        <MudGrid Justify="Justify.Center" Class="mt-5">
+            <MudItem xs="12" md="7">
+                <MudPaper Elevation="0" Class="pa-8" Style="width: 100%;" Outlined="true">
+                    <MudForm Spacing="3" @ref="_form" Model="@_model" @bind-IsValid="_isFormValid">
+                        <MudText Typo="Typo.h1" Align="Align.Center">ĐĂNG NHẬP</MudText>
 
-                @if (!string.IsNullOrEmpty(ErrorMessage))
-                {
-                    <MudAlert Severity="Severity.Error" Elevation="0">
-                        @ErrorMessage
-                    </MudAlert>
-                }
+                        @if (!string.IsNullOrEmpty(ErrorMessage))
+                        {
+                            <MudAlert Severity="Severity.Error" Elevation="0">
+                                @ErrorMessage
+                            </MudAlert>
+                        }
 
-                <MudTextField InputType="InputType.Email" Disabled="_isSubmitting"
-                              @bind-Value="_model.Email" For="@(() => _model.Email)"
-                              Immediate="true" ShrinkLabel="true"
-                              Margin="Margin.Dense" Variant="Variant.Outlined" />
+                        <MudTextField InputType="InputType.Email" Disabled="_isSubmitting"
+                                      @bind-Value="_model.Email" For="@(() => _model.Email)"
+                                      Immediate="true" ShrinkLabel="true"
+                                      Margin="Margin.Dense" Variant="Variant.Outlined" />
 
-                <MudTextField InputType="InputType.Password" Disabled="_isSubmitting"
-                              @bind-Value="_model.Password" For="@(() => _model.Password)"
-                              Immediate="true" ShrinkLabel="true"
-                              Margin="Margin.Dense" Variant="Variant.Outlined" />
+                        <MudTextField InputType="InputType.Password" Disabled="_isSubmitting"
+                                      @bind-Value="_model.Password" For="@(() => _model.Password)"
+                                      Immediate="true" ShrinkLabel="true"
+                                      Margin="Margin.Dense" Variant="Variant.Outlined" />
 
-                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                    <MudCheckBox CheckedIcon="@Icons.Material.Filled.CheckCircle"
-                                 UncheckedIcon="@Icons.Material.Filled.CheckCircleOutline"
-                                 For="@(() => _model.RememberMe)" Dense="true"
-                                 Color="Color.Primary" @bind-Value="@_model.RememberMe" />
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudCheckBox CheckedIcon="@Icons.Material.Filled.CheckCircle"
+                                         UncheckedIcon="@Icons.Material.Filled.CheckCircleOutline"
+                                         For="@(() => _model.RememberMe)" Dense="true"
+                                         Color="Color.Primary" @bind-Value="@_model.RememberMe" />
 
-                    <MudLink Typo="Typo.body2" OnClick="OpenForgotPasswordDialog" Class="text-decoration-none">Quên mật khẩu?</MudLink>
-                </MudStack>
-
-
-
-                @if (_isSubmitting)
-                {
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                }
-                else
-                {
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                               DropShadow="false" Class="rounded-pill"
-                               OnClick="@(Login)">Đăng nhập</MudButton>
-                }
-            </MudForm>
-
-            <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-3">
-                Chưa có tài khoản?
-                <MudLink OnClick="@(() => navigationManager.NavigateTo("/register"))"
-                         Class="text-decoration-none" Typo="Typo.body2">
-                    Đăng ký ngay
-                </MudLink>
-            </MudText>
+                            <MudLink Typo="Typo.body2" OnClick="OpenForgotPasswordDialog" Class="text-decoration-none">Quên mật khẩu?</MudLink>
+                        </MudStack>
 
 
-            <MudButton FullWidth="true" DropShadow="false"
-                       Variant="Variant.Filled" Class="rounded-pill mt-5"
-                       Color="Color.Success" StartIcon="@Icons.Custom.Brands.Gmail"
-                       OnClick="LoginWithGoogle">
-                Đăng nhập với Google
-            </MudButton>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+
+                        @if (_isSubmitting)
+                        {
+                            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       DropShadow="false" Class="rounded-pill"
+                                       OnClick="@(Login)">Đăng nhập</MudButton>
+                        }
+                    </MudForm>
+
+                    <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-3">
+                        Chưa có tài khoản?
+                        <MudLink OnClick="@(() => navigationManager.NavigateTo("/register"))"
+                                 Class="text-decoration-none" Typo="Typo.body2">
+                            Đăng ký ngay
+                        </MudLink>
+                    </MudText>
+
+
+                    <MudButton FullWidth="true" DropShadow="false"
+                               Variant="Variant.Filled" Class="rounded-pill mt-5"
+                               Color="Color.Success" StartIcon="@Icons.Custom.Brands.Gmail"
+                               OnClick="LoginWithGoogle">
+                        Đăng nhập với Google
+                    </MudButton>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
 
     MudForm? _form;
 
@@ -126,7 +139,9 @@
                     await localStorage.RemoveItemAsync("password");
                 }
 
-                navigationManager.NavigateTo("/");
+                var redirectUrl = string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl;
+
+                navigationManager.NavigateTo(redirectUrl);
             }
             else
             {
@@ -150,7 +165,6 @@
 
         if (result != null && !result.Canceled)
         {
-            //await OnPostDeleted.InvokeAsync(Post.Id);
         }
     }
 
@@ -160,7 +174,9 @@
 
         if (isSuccess)
         {
-            navigationManager.NavigateTo("/");
+            var redirectUrl = string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl;
+
+            navigationManager.NavigateTo(redirectUrl);
         }
         else
         {
@@ -176,7 +192,7 @@
         [Label("Mật khẩu")]
         [Required(ErrorMessage = "Mật khẩu không được để trống")]
         public string Password { get; set; } = string.Empty;
-        [Label("Nhớ thông tin đăng nhập")]
+        [Label("Nhớ thông tin")]
         public bool RememberMe { get; set; } = false;
     }
 

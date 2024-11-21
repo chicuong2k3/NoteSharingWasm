@@ -12,8 +12,16 @@ public record PostResponse
     string Content,
     List<TagResponse> Tags,
     DateTime PublicationDate,
-    Guid UserId
+    Guid UserId,
+    List<PostInteractionDto> Interactions
 );
 
+
+public record PostInteractionDto(
+    Guid PostId,
+    Guid UserId,
+    string InteractionType,
+    DateTime InteractedAt
+);
 
 

@@ -1,0 +1,84 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+
+@inject IPostService postService
+@inject IConfiguration configuration
+@inject NavigationManager navigationManager
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+
+    <AuthorizeView>
+        <Authorized>
+            @if (_liked)
+            {
+                <MudTooltip Color="Color.Info" Text="Bỏ thích">
+                    <MudIconButton Icon="@Icons.Material.Filled.Favorite" Color="Color.Error"
+                                   OnClick="LikePost" />
+                </MudTooltip>
+
+            }
+            else
+            {
+                <MudTooltip Color="Color.Info" Text="Thích">
+                    <MudIconButton Icon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Error"
+                                   OnClick="LikePost" />
+                </MudTooltip>
+
+            }
+        </Authorized>
+        <NotAuthorized>
+            <MudTooltip Color="Color.Info" Text="Đăng nhập để thích bài viết">
+                <MudIconButton Icon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Error"
+                               OnClick="NavigateToLogin" />
+            </MudTooltip>
+        </NotAuthorized>
+    </AuthorizeView>
+
+    <MudText Color="Color.Error" Typo="Typo.body2" Style="font-weight: 600">
+        @_likeCount
+    </MudText>
+</MudStack>
+
+@code {
+    HubConnection? _hubConnection;
+    int _likeCount;
+    bool _liked;
+
+    [Parameter, EditorRequired]
+    public required PostResponse Post { get; set; }
+
+    [Parameter, EditorRequired]
+    public Guid UserId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _likeCount = Post.Interactions.Count(x => x.InteractionType.Equals("like", StringComparison.CurrentCultureIgnoreCase));
+        _liked = Post.Interactions.Exists(x => x.UserId == UserId && x.InteractionType.Equals("like", StringComparison.CurrentCultureIgnoreCase));
+
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl($"{configuration["ApiAddress"]}/hubs/interaction")
+            .Build();
+
+        _hubConnection.On<int>("UpdatePostInteraction", (value) =>
+        {
+            _likeCount = value;
+
+            InvokeAsync(StateHasChanged);
+        });
+
+
+        await _hubConnection.StartAsync();
+    }
+
+    private async Task LikePost()
+    {
+        var response = await postService.InteractPost(new InteractionRequest(Post.Id, UserId, "like"));
+        _liked = !_liked;
+    }
+
+    private void NavigateToLogin()
+    {
+        navigationManager.NavigateTo($"/login?ReturnUrl=/post/{Post.Id}");
+    }
+
+}

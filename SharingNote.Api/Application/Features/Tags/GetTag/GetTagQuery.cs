@@ -2,4 +2,4 @@
 
 public sealed record GetTagQuery(
     Guid Id
-) : IQuery<GetTagResponse>;
+) : IQuery<TagDto>;
